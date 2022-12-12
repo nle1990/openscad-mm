@@ -7,9 +7,9 @@ class MaterialNode : public AbstractNode
 {
 public:
   VISITABLE();
-  MaterialNode(const ModuleInstantiation *mi) : AbstractNode(mi), color(-1.0f, -1.0f, -1.0f, 1.0f) { }
+  MaterialNode(const ModuleInstantiation *mi) : AbstractNode(mi), material_name() { }
   std::string toString() const override;
   std::string name() const override;
 
-  Color4f color;
+  std::string material_name;
 };

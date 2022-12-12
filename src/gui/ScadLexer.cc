@@ -33,7 +33,7 @@ ScadLexer::ScadLexer(QObject *parent) : QsciLexerCPP(parent)
     "minkowski hull resize child children echo union difference "
     "intersection linear_extrude rotate_extrude import group "
     "projection render surface scale rotate mirror translate "
-    "multmatrix color offset intersection_for roof fill";
+    "multmatrix color part material offset intersection_for roof fill";
 
   setFoldComments(true);
   setFoldAtElse(true);
@@ -119,12 +119,12 @@ void Lex::default_rules()
 
   //include and use have a unique syntax
   rules_.push("INITIAL", "use", ekeyword, "PATH");
-  rules_.push("INITIAL", "include", ekeyword, "PATH");  
-  rules_.push("PATH", ".|\n", etext, "INITIAL"); //leave this state; "use" and "include" can also be used as variable names 
+  rules_.push("INITIAL", "include", ekeyword, "PATH");
+  rules_.push("PATH", ".|\n", etext, "INITIAL"); //leave this state; "use" and "include" can also be used as variable names
   rules_.push("PATH", "[ \t\r\n]*<[^>]*>", eQuotedString, "INITIAL");
 
   std::string transformations("translate rotate scale linear_extrude "
-                              "rotate_extrude resize mirror multmatrix color "
+                              "rotate_extrude resize mirror multmatrix color part material "
                               "offset hull minkowski children");
   defineRules(transformations, etransformation);
 
@@ -280,13 +280,13 @@ void ScadLexer2::fold(int start, int end)
         levelCurrent--;
       }
     }
-    
+
 
     bool prevStyleIsComment = (prevStyle == Comment);
     bool currStyleIsComment = (currStyle == Comment);
     bool isStartOfComment = (!prevStyleIsComment) && (currStyleIsComment);
     bool isEndOfComment   = (prevStyleIsComment) && (!currStyleIsComment);
-    
+
     if (isStartOfComment) {
       levelCurrent++;
     }

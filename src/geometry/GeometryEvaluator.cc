@@ -16,6 +16,9 @@
 #include "ProjectionNode.h"
 #include "CsgOpNode.h"
 #include "TextNode.h"
+#include "ColorNode.h"
+#include "PartNode.h"
+#include "MaterialNode.h"
 #include "CGALHybridPolyhedron.h"
 #include "cgalutils.h"
 #include "RenderNode.h"
@@ -431,6 +434,75 @@ void GeometryEvaluator::addToParent(const State& state,
    Custom nodes are handled here => implicit union
  */
 Response GeometryEvaluator::visit(State& state, const AbstractNode& node)
+{
+  if (state.isPrefix()) {
+    if (isSmartCached(node)) return Response::PruneTraversal;
+    state.setPreferNef(true); // Improve quality of CSG by avoiding conversion loss
+  }
+  if (state.isPostfix()) {
+    shared_ptr<const class Geometry> geom;
+    if (!isSmartCached(node)) {
+      geom = applyToChildren(node, OpenSCADOperator::UNION).constptr();
+    } else {
+      geom = smartCacheGet(node, state.preferNef());
+    }
+    addToParent(state, node, geom);
+    node.progress_report();
+  }
+  return Response::ContinueTraversal;
+}
+
+/*!
+   Custom nodes are handled here => implicit union
+   TODO
+ */
+Response GeometryEvaluator::visit(State& state, const ColorNode& node)
+{
+  if (state.isPrefix()) {
+    if (isSmartCached(node)) return Response::PruneTraversal;
+    state.setPreferNef(true); // Improve quality of CSG by avoiding conversion loss
+  }
+  if (state.isPostfix()) {
+    shared_ptr<const class Geometry> geom;
+    if (!isSmartCached(node)) {
+      geom = applyToChildren(node, OpenSCADOperator::UNION).constptr();
+    } else {
+      geom = smartCacheGet(node, state.preferNef());
+    }
+    addToParent(state, node, geom);
+    node.progress_report();
+  }
+  return Response::ContinueTraversal;
+}
+
+/*!
+   Custom nodes are handled here => implicit union
+   TODO
+ */
+Response GeometryEvaluator::visit(State& state, const PartNode& node)
+{
+  if (state.isPrefix()) {
+    if (isSmartCached(node)) return Response::PruneTraversal;
+    state.setPreferNef(true); // Improve quality of CSG by avoiding conversion loss
+  }
+  if (state.isPostfix()) {
+    shared_ptr<const class Geometry> geom;
+    if (!isSmartCached(node)) {
+      geom = applyToChildren(node, OpenSCADOperator::UNION).constptr();
+    } else {
+      geom = smartCacheGet(node, state.preferNef());
+    }
+    addToParent(state, node, geom);
+    node.progress_report();
+  }
+  return Response::ContinueTraversal;
+}
+
+/*!
+   Custom nodes are handled here => implicit union
+   TODO
+ */
+Response GeometryEvaluator::visit(State& state, const MaterialNode& node)
 {
   if (state.isPrefix()) {
     if (isSmartCached(node)) return Response::PruneTraversal;

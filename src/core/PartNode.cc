@@ -59,7 +59,7 @@ static std::shared_ptr<AbstractNode> builtin_part(const ModuleInstantiation *ins
 
 std::string PartNode::toString() const
 {
-  return STR("part(\"", this->part_name, "\")"); //TODO escaping of part_name
+  return STR("part(", QuotedString(this->part_name), ")");
 }
 
 std::string PartNode::name() const

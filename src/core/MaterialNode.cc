@@ -59,7 +59,7 @@ static std::shared_ptr<AbstractNode> builtin_material(const ModuleInstantiation 
 
 std::string MaterialNode::toString() const
 {
-  return STR("material(\"", this->material_name, "\")"); //TODO escaping of material_name
+  return STR("material(", QuotedString(this->material_name), ")");
 }
 
 std::string MaterialNode::name() const

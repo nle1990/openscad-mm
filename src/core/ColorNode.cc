@@ -268,7 +268,37 @@ static std::shared_ptr<AbstractNode> builtin_color(const ModuleInstantiation *in
     node->color[3] = parameters["alpha"].toDouble();
   }
 
-  return children.instantiate(node);
+  LOG(message_group::None, Location::NONE, "", "Color %1$s: instantiating children", node->toString());
+
+  node->derivedColor = node->color;
+
+  auto returnNode = children.instantiate(node);
+
+  LOG(message_group::None, Location::NONE, "", "Color %1$s: marking children", node->toString());
+  LOG(message_group::None, Location::NONE, "", "Color %1$s: return node %2$s", node->toString(), returnNode->toString());
+
+  std::function<void (const std::shared_ptr<const AbstractNode> &)> recursive_mark_children = [&](const std::shared_ptr<const AbstractNode> &currentNode) {
+    for (auto child : currentNode->children) {
+
+      //At first I thought inner color commands would not be overwritten by outer ones, but this is not currently the case in
+      //the thrown together renderer. If we do want this behavior, uncomment this:
+      /*
+      if(dynamic_cast<ColorNode*>(child.get()) != nullptr)
+      {
+        LOG(message_group::None, Location::NONE, "", "Child %1$s: also a color node, skipping subtree", child->toString());
+        continue;
+      }
+      */
+
+      LOG(message_group::None, Location::NONE, "", "Child %1$s: marking color as %2$s", child->toString(), node->toString());
+      child->derivedColor = node->color;
+      recursive_mark_children(child);
+    }
+  };
+
+  recursive_mark_children(node);
+
+  return returnNode;
 }
 
 std::string ColorNode::toString() const

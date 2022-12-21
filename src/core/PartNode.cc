@@ -46,20 +46,34 @@ static std::shared_ptr<AbstractNode> builtin_part(const ModuleInstantiation *ins
 
   Parameters parameters = Parameters::parse(std::move(arguments), inst->location(), {"name"});
   if (parameters["name"].type() == Value::Type::STRING) {
-    auto part_name = parameters["name"].toString();
-    boost::algorithm::to_lower(part_name);
-    node->part_name = part_name;
+    auto partName = parameters["name"].toString();
+    boost::algorithm::to_lower(partName);
+    node->partName = partName;
   }
   else if (parameters["name"].type() == Value::Type::NUMBER) {
-    node->part_name = parameters["name"].toString();
+    node->partName = parameters["name"].toString();
   }
 
-  return children.instantiate(node);
+  node->derivedPartName = node->partName;
+
+  auto returnNode = children.instantiate(node);
+
+  std::function<void (const std::shared_ptr<const AbstractNode> &)> recursive_mark_children = [&](const std::shared_ptr<const AbstractNode> &currentNode) {
+    for (auto child : currentNode->children) {
+      LOG(message_group::None, Location::NONE, "", "Child %1$s: marking partName as %2$s", child->toString(), node->toString());
+      child->derivedPartName = node->partName;
+      recursive_mark_children(child);
+    }
+  };
+
+  recursive_mark_children(node);
+
+  return returnNode;
 }
 
 std::string PartNode::toString() const
 {
-  return STR("part(", QuotedString(this->part_name), ")");
+  return STR("part(", QuotedString(this->partName), ")");
 }
 
 std::string PartNode::name() const

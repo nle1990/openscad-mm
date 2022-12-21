@@ -6,6 +6,7 @@
 #include "BaseVisitable.h"
 #include "AST.h"
 #include "ModuleInstantiation.h"
+#include "linalg.h" //Color4f
 
 extern int progress_report_count;
 extern void (*progress_report_f)(const std::shared_ptr<const AbstractNode> &, void *, int);
@@ -62,6 +63,10 @@ public:
   void progress_report() const;
 
   int idx; // Node index (unique per tree)
+
+  std::string derivedMaterialName = "";
+  std::string derivedPartName = "";
+  Color4f derivedColor = {0, 255, 0, 255}; //FIXME default color
 
   std::shared_ptr<const AbstractNode> getNodeByID(int idx, std::deque<std::shared_ptr<const AbstractNode> >& path) const;
 };

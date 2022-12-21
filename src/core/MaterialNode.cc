@@ -46,20 +46,34 @@ static std::shared_ptr<AbstractNode> builtin_material(const ModuleInstantiation 
 
   Parameters parameters = Parameters::parse(std::move(arguments), inst->location(), {"name"});
   if (parameters["name"].type() == Value::Type::STRING) {
-    auto material_name = parameters["name"].toString();
-    boost::algorithm::to_lower(material_name);
-    node->material_name = material_name;
+    auto materialName = parameters["name"].toString();
+    boost::algorithm::to_lower(materialName);
+    node->materialName = materialName;
   }
   else if (parameters["name"].type() == Value::Type::NUMBER) {
-    node->material_name = parameters["name"].toString();
+    node->materialName = parameters["name"].toString();
   }
 
-  return children.instantiate(node);
+  node->derivedMaterialName = node->materialName;
+
+  auto returnNode = children.instantiate(node);
+
+  std::function<void (const std::shared_ptr<const AbstractNode> &)> recursive_mark_children = [&](const std::shared_ptr<const AbstractNode> &currentNode) {
+    for (auto child : currentNode->children) {
+      LOG(message_group::None, Location::NONE, "", "Child %1$s: marking materialName as %2$s", child->toString(), node->toString());
+      child->derivedMaterialName = node->materialName;
+      recursive_mark_children(child);
+    }
+  };
+
+  recursive_mark_children(node);
+
+  return returnNode;
 }
 
 std::string MaterialNode::toString() const
 {
-  return STR("material(", QuotedString(this->material_name), ")");
+  return STR("material(", QuotedString(this->materialName), ")");
 }
 
 std::string MaterialNode::name() const

@@ -66,7 +66,7 @@ public:
 
   std::string derivedMaterialName = "";
   std::string derivedPartName = "";
-  Color4f derivedColor = {0, 255, 0, 255}; //FIXME default color
+  Color4f derivedColor;
 
   std::shared_ptr<const AbstractNode> getNodeByID(int idx, std::deque<std::shared_ptr<const AbstractNode> >& path) const;
 };

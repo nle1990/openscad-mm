@@ -60,7 +60,7 @@ static std::shared_ptr<AbstractNode> builtin_part(const ModuleInstantiation *ins
 
   std::function<void (const std::shared_ptr<const AbstractNode> &)> recursive_mark_children = [&](const std::shared_ptr<const AbstractNode> &currentNode) {
     for (auto child : currentNode->children) {
-      LOG(message_group::None, Location::NONE, "", "Child %1$s: marking partName as %2$s", child->toString(), node->toString());
+      LOG(message_group::None, Location::NONE, "", "Child %1$s: marking partName as %2$s, previously %3$s", child->toString(), node->partName, child->derivedPartName);
       child->derivedPartName = node->partName;
       recursive_mark_children(child);
     }

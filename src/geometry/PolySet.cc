@@ -238,3 +238,8 @@ void PolySet::quantizeVertices(std::vector<Vector3d> *pPointsOut)
   }
 }
 
+
+std::string PolySet::toString() const
+{
+  return "PolySet";
+}

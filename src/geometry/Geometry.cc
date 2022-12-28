@@ -1,6 +1,8 @@
 #include "Geometry.h"
 #include "printutils.h"
+#include "node.h"
 #include <boost/foreach.hpp>
+#include <sstream>
 
 GeometryList::GeometryList()
 {
@@ -84,3 +86,18 @@ Geometry::Geometries GeometryList::flatten() const
   ::flatten(*this, newchildren);
   return newchildren;
 }
+
+std::string GeometryList::toString() const
+{
+  std::ostringstream os;
+  os << "GeometryList<\n";
+  bool start = true;
+  for (const auto& item : this->children) {
+    if(!start) os << ",\n";
+    os << "    " << item.second->toString() << "\n      (" << item.first->toString() << ")";
+    start = false;
+  }
+  os << ">";
+  return os.str();
+}
+

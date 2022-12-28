@@ -79,6 +79,7 @@ public:
 
   /*! Iterate over all vertices' points until the function returns true (for done). */
   void foreachVertexUntilTrue(const std::function<bool(const point_t& pt)>& f) const;
+  std::string toString() const override;
 
   std::shared_ptr<CGAL_HybridNef> convertToNef();
   std::shared_ptr<CGAL_HybridMesh> convertToMesh();

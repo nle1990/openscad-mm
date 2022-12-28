@@ -34,6 +34,8 @@ public:
   virtual void resize(const Vector3d& newsize, const Eigen::Matrix<bool, 3, 1>& autosize) { assert(!"resize not implemented!"); }
 
   virtual void accept(class GeometryVisitor& visitor) const = 0;
+  virtual std::string toString() const { return "This Geometry type does not implement toString()!"; }
+
 protected:
   int convexity;
 };
@@ -82,5 +84,6 @@ public:
   }
 
   Geometries flatten() const;
+  std::string toString() const override;
 
 };

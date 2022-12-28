@@ -110,3 +110,9 @@ void CGAL_Nef_polyhedron::transform(const Transform3d& matrix)
     }
   }
 }
+
+std::string CGAL_Nef_polyhedron::toString() const
+{
+  return "CGAL_Nef_polyhedron";
+}
+

@@ -455,3 +455,8 @@ bool CGALHybridPolyhedron::sharesAnyVertexWith(const CGALHybridPolyhedron& other
 
   return foundCollision;
 }
+
+std::string CGALHybridPolyhedron::toString() const
+{
+  return "CGALHybridPolyhedron";
+}

@@ -33,6 +33,7 @@ public:
   CGAL_Nef_polyhedron& minkowski(const CGAL_Nef_polyhedron& other);
   virtual void transform(const Transform3d& matrix) override;
   virtual void resize(const Vector3d& newsize, const Eigen::Matrix<bool, 3, 1>& autosize) override;
+  std::string toString() const override;
 
   shared_ptr<const CGAL_Nef_polyhedron3> p3;
 };

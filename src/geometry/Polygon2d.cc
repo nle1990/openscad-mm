@@ -119,3 +119,8 @@ bool Polygon2d::is_convex() const
   return true;
 }
 
+
+std::string Polygon2d::toString() const
+{
+  return "Polygon2d";
+}

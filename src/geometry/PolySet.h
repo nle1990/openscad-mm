@@ -46,6 +46,7 @@ public:
 
   bool is_convex() const;
   boost::tribool convexValue() const { return this->convex; }
+  std::string toString() const override;
 
 private:
   Polygon2d polygon;

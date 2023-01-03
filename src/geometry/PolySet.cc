@@ -241,5 +241,5 @@ void PolySet::quantizeVertices(std::vector<Vector3d> *pPointsOut)
 
 std::string PolySet::toString() const
 {
-  return "PolySet";
+  return "PolySet (" + std::to_string(getDimension()) + "D, " + std::to_string(numFacets()) + " facets)";
 }

@@ -84,10 +84,24 @@ shared_ptr<const Geometry> GeometryEvaluator::evaluateGeometry(const AbstractNod
     }
     smartCacheInsert(node, this->root);
 
-    LOG(message_group::None, Location::NONE, "", "returning evaluated geometry: '%1$s'", this->root->toString());
+    if(this->root)
+    {
+      LOG(message_group::None, Location::NONE, "", "returning evaluated geometry: '%1$s'", this->root->toString());
+    }
+    else
+    {
+      LOG(message_group::None, Location::NONE, "", "returning null pointer");
+    }
     return this->root;
   }
-  LOG(message_group::None, Location::NONE, "", "returning cached geometry: '%1$s'", GeometryCache::instance()->get(key)->toString());
+  if(GeometryCache::instance()->get(key))
+  {
+    LOG(message_group::None, Location::NONE, "", "returning cached geometry: '%1$s'", GeometryCache::instance()->get(key)->toString());
+  }
+  else
+  {
+    LOG(message_group::None, Location::NONE, "", "returning null pointer (b)");
+  }
   return GeometryCache::instance()->get(key);
 }
 

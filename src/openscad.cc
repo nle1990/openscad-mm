@@ -529,6 +529,7 @@ int do_export(const CommandLine& cmd, const RenderVariables& render_variables, F
 
     // start measuring render time
     RenderStatistic renderStatistic;
+    LOG(message_group::None, Location::NONE, "", "geometryEvaluator about to be called from do_export");
     GeometryEvaluator geomevaluator(tree);
     unique_ptr<OffscreenView> glview;
     shared_ptr<const Geometry> root_geom;

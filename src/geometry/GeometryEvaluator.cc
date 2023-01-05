@@ -40,6 +40,7 @@
 GeometryEvaluator::GeometryEvaluator(const class Tree& tree) :
   tree(tree)
 {
+  LOG(message_group::None, Location::NONE, "", "GeometryEvaluator constructed");
 }
 
 /*!

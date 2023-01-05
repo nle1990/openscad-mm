@@ -193,6 +193,7 @@ Response CSGTreeEvaluator::visit(State& state, const AbstractPolyNode& node)
   if (state.isPostfix()) {
     shared_ptr<CSGNode> t1;
     if (this->geomevaluator) {
+      LOG(message_group::None, Location::NONE, "", "Calling evaluateGeometry from CSGTreeEvaluator::visit(State& state, const AbstractPolyNode& node)");
       auto geom = this->geomevaluator->evaluateGeometry(node, false);
       if (geom) {
         t1 = evaluateCSGNodeFromGeometry(state, geom, node.modinst, node);
@@ -251,6 +252,7 @@ Response CSGTreeEvaluator::visit(State& state, const RenderNode& node)
     shared_ptr<CSGNode> t1;
     shared_ptr<const Geometry> geom;
     if (this->geomevaluator) {
+      LOG(message_group::None, Location::NONE, "", "Calling evaluateGeometry from CSGTreeEvaluator::visit(State& state, const RenderNode& node)");
       geom = this->geomevaluator->evaluateGeometry(node, false);
       if (geom) {
         t1 = evaluateCSGNodeFromGeometry(state, geom, node.modinst, node);
@@ -272,6 +274,7 @@ Response CSGTreeEvaluator::visit(State& state, const CgalAdvNode& node)
     // FIXME: Calling evaluator directly since we're not a PolyNode. Generalize this.
     shared_ptr<const Geometry> geom;
     if (this->geomevaluator) {
+      LOG(message_group::None, Location::NONE, "", "Calling evaluateGeometry from CSGTreeEvaluator::visit(State& state, const CgalAdvNode& node)");
       geom = this->geomevaluator->evaluateGeometry(node, false);
       if (geom) {
         t1 = evaluateCSGNodeFromGeometry(state, geom, node.modinst, node);

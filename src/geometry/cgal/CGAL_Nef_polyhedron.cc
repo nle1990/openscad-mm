@@ -4,9 +4,10 @@
 #include "printutils.h"
 #include "svg.h"
 
-CGAL_Nef_polyhedron::CGAL_Nef_polyhedron(const CGAL_Nef_polyhedron3 *p)
+CGAL_Nef_polyhedron::CGAL_Nef_polyhedron(const CGAL_Nef_polyhedron3 *p, Geometry::Attributes attr)
 {
   if (p) p3.reset(p);
+  attributes = attr;
 }
 
 // Copy constructor only performs shallow copies, so all modifying functions
@@ -15,6 +16,7 @@ CGAL_Nef_polyhedron::CGAL_Nef_polyhedron(const CGAL_Nef_polyhedron3 *p)
 CGAL_Nef_polyhedron::CGAL_Nef_polyhedron(const CGAL_Nef_polyhedron& src)
 {
   if (src.p3) this->p3 = src.p3;
+  this->attributes = src.attributes;
 }
 
 CGAL_Nef_polyhedron CGAL_Nef_polyhedron::operator+(const CGAL_Nef_polyhedron& other) const

@@ -10,16 +10,18 @@
 #include <cstdio>
 #include <variant>
 
-CGALHybridPolyhedron::CGALHybridPolyhedron(const shared_ptr<CGAL_HybridNef>& nef)
+CGALHybridPolyhedron::CGALHybridPolyhedron(const shared_ptr<CGAL_HybridNef>& nef, Geometry::Attributes attr)
 {
   assert(nef);
   data = nef;
+  attributes = attr;
 }
 
-CGALHybridPolyhedron::CGALHybridPolyhedron(const shared_ptr<CGAL_HybridMesh>& mesh)
+CGALHybridPolyhedron::CGALHybridPolyhedron(const shared_ptr<CGAL_HybridMesh>& mesh, Geometry::Attributes attr)
 {
   assert(mesh);
   data = mesh;
+  attributes = attr;
 
 }
 

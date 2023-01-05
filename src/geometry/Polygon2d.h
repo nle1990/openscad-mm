@@ -20,7 +20,7 @@ class Polygon2d : public Geometry
 {
 public:
   VISITABLE_GEOMETRY();
-  Polygon2d() : sanitized(false) {}
+  Polygon2d(Geometry::Attributes attr) : sanitized(false) { attributes = attr; }
   size_t memsize() const override;
   BoundingBox getBoundingBox() const override;
   std::string dump() const override;

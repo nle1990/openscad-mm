@@ -15,8 +15,8 @@ public:
   VISITABLE_GEOMETRY();
   Polygons polygons;
 
-  PolySet(unsigned int dim, boost::tribool convex = unknown);
-  PolySet(const Polygon2d& origin);
+  PolySet(unsigned int dim, Geometry::Attributes attr, boost::tribool convex = unknown);
+  PolySet(const Polygon2d& origin, Geometry::Attributes attr);
   ~PolySet();
 
   const Polygon2d& getPolygon() const { return polygon; }

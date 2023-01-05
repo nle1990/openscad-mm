@@ -36,6 +36,15 @@ public:
   virtual void accept(class GeometryVisitor& visitor) const = 0;
   virtual std::string toString() const { return "This Geometry type does not implement toString()!"; }
 
+  struct Attributes {
+    std::string materialName = "";
+    std::string partName = "";
+    Color4f color = {-1.0f, -1.0f, -1.0f, 1.0f};
+    bool metadataCollected = false;
+  };
+
+  Attributes attributes;
+
 protected:
   int convexity;
 };

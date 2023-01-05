@@ -49,10 +49,10 @@ GeometryEvaluator::GeometryEvaluator(const class Tree& tree) :
 shared_ptr<const Geometry> GeometryEvaluator::evaluateGeometry(const AbstractNode& node,
                                                                bool allownef)
 {
-  const std::string& key = this->tree.getIdString(node);
+  const std::string& key = this->tree.getIdString(node); //FIXME: does this cache need to be modified to be part/material/color metadata aware? could it e.g. cache subtrees of different colors as the same?
   if (!GeometryCache::instance()->contains(key)) {
     shared_ptr<const Geometry> N;
-    if (CGALCache::instance()->contains(key)) {
+    if (CGALCache::instance()->contains(key)) { //FIXME: same as above
       N = CGALCache::instance()->get(key);
     }
 

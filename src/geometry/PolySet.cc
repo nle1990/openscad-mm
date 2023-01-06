@@ -45,14 +45,14 @@
 
  */
 
-PolySet::PolySet(unsigned int dim, Geometry::Attributes attr, boost::tribool convex) : dim(dim), convex(convex), dirty(false)
+PolySet::PolySet(unsigned int dim, Geometry::Attributes attr, boost::tribool convex) : dim(dim), convex(convex), dirty(false), polygon(Polygon2d(attr))
 {
   attributes = attr;
 }
 
-PolySet::PolySet(const Polygon2d& origin, Geometry::Attributes attr) : polygon(origin), dim(2), convex(unknown), dirty(false)
+PolySet::PolySet(const Polygon2d& origin) : polygon(origin), dim(2), convex(unknown), dirty(false)
 {
-  attributes = attr;
+  attributes = origin.attributes;
 }
 
 PolySet::~PolySet()

@@ -78,7 +78,7 @@ PolySet *straight_skeleton_roof(const Polygon2d& poly)
   int scale_pow2 = ClipperUtils::getScalePow2(poly.getBoundingBox(), 32);
   ClipperLib::Paths paths = ClipperUtils::fromPolygon2d(poly, scale_pow2);
   ClipperLib::PolyTree polytree = ClipperUtils::sanitize(paths);
-  Polygon2d *poly_sanitized = ClipperUtils::toPolygon2d(polytree, scale_pow2);
+  Polygon2d *poly_sanitized = ClipperUtils::toPolygon2d(polytree, scale_pow2, poly.attr);
 
   try {
     // roof

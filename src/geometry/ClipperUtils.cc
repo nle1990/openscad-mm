@@ -70,7 +70,7 @@ ClipperLib::PolyTree sanitize(const ClipperLib::Paths& paths)
 Polygon2d *sanitize(const Polygon2d& poly)
 {
   auto tmp = ClipperUtils::fromPolygon2d(poly);
-  return toPolygon2d(sanitize(tmp.geometry), ClipperUtils::getScalePow2(tmp.bounds));
+  return toPolygon2d(sanitize(tmp.geometry), ClipperUtils::getScalePow2(tmp.bounds), poly.attributes);
 }
 
 /*!
@@ -79,9 +79,9 @@ Polygon2d *sanitize(const Polygon2d& poly)
    We could use a Paths structure, but we'd have to check the orientation of each
    path before adding it to the Polygon2d.
  */
-Polygon2d *toPolygon2d(const ClipperLib::PolyTree& poly, int pow2)
+Polygon2d *toPolygon2d(const ClipperLib::PolyTree& poly, int pow2, Geometry::Attributes attr)
 {
-  auto result = new Polygon2d;
+  auto result = new Polygon2d(attr);
   auto node = poly.GetFirst();
   double scale = std::ldexp(1.0, -pow2);
   while (node) {
@@ -124,7 +124,7 @@ ClipperLib::Paths process(const ClipperLib::Paths& polygons,
    May return an empty Polygon2d, but will not return nullptr.
  */
 Polygon2d *apply(const std::vector<ClipperLib::Paths>& pathsvector,
-                 ClipperLib::ClipType clipType, int pow2)
+                 ClipperLib::ClipType clipType, int pow2, Geometry::Attributes attr) //FIXME: is this the best way here?
 {
   ClipperLib::Clipper clipper;
 
@@ -141,7 +141,7 @@ Polygon2d *apply(const std::vector<ClipperLib::Paths>& pathsvector,
         clipper.Clear();
       }
     }
-    return ClipperUtils::toPolygon2d(result, pow2);
+    return ClipperUtils::toPolygon2d(result, pow2, attr);
   }
 
   bool first = true;
@@ -154,7 +154,7 @@ Polygon2d *apply(const std::vector<ClipperLib::Paths>& pathsvector,
   // The returned result will have outlines ordered according to whether
   // they're positive or negative: Positive outlines counter-clockwise and
   // negative outlines clockwise.
-  return ClipperUtils::toPolygon2d(sumresult, pow2);
+  return ClipperUtils::toPolygon2d(sumresult, pow2, attr);
 }
 
 /*!
@@ -163,7 +163,7 @@ Polygon2d *apply(const std::vector<ClipperLib::Paths>& pathsvector,
    May return an empty Polygon2d, but will not return nullptr.
  */
 Polygon2d *apply(const std::vector<const Polygon2d *>& polygons,
-                 ClipperLib::ClipType clipType)
+                 ClipperLib::ClipType clipType, Geometry::Attributes attr) //FIXME: is this the best way here? check if all polygons in teh vector have the same attributes instead? but what if not?
 {
   BoundingBox bounds;
   for (auto polygon : polygons) {
@@ -181,7 +181,7 @@ Polygon2d *apply(const std::vector<const Polygon2d *>& polygons,
       pathsvector.push_back(ClipperLib::Paths());
     }
   }
-  auto res = apply(pathsvector, clipType, pow2);
+  auto res = apply(pathsvector, clipType, pow2, attr);
   assert(res);
   return res;
 }
@@ -252,7 +252,7 @@ static void fill_minkowski_insides(const ClipperLib::Paths& a,
   }
 }
 
-Polygon2d *applyMinkowski(const std::vector<const Polygon2d *>& polygons)
+Polygon2d *applyMinkowski(const std::vector<const Polygon2d *>& polygons, Geometry::Attributes attr) //FIXME: possibly change (also attr does not get used if there is only one polygon in the list, in some cases)
 {
   if (polygons.size() == 1) {
     return polygons[0] ? new Polygon2d(*polygons[0]) : nullptr; // Just copy
@@ -274,7 +274,7 @@ Polygon2d *applyMinkowski(const std::vector<const Polygon2d *>& polygons)
   int pow2 = getScalePow2(in_bounds.extend(out_bounds));
 
   ClipperLib::Clipper c;
-  auto lhs = fromPolygon2d(polygons[0] ? *polygons[0] : Polygon2d(), pow2);
+  auto lhs = fromPolygon2d(polygons[0] ? *polygons[0] : Polygon2d(attr), pow2);
 
   for (size_t i = 1; i < polygons.size(); ++i) {
     if (!polygons[i]) continue;
@@ -306,7 +306,7 @@ Polygon2d *applyMinkowski(const std::vector<const Polygon2d *>& polygons)
 
   ClipperLib::PolyTree polytree;
   c.Execute(ClipperLib::ctUnion, polytree, ClipperLib::pftNonZero, ClipperLib::pftNonZero);
-  return toPolygon2d(polytree, pow2);
+  return toPolygon2d(polytree, pow2, attr);
 }
 
 Polygon2d *applyOffset(const Polygon2d& poly, double offset, ClipperLib::JoinType joinType,
@@ -327,6 +327,6 @@ Polygon2d *applyOffset(const Polygon2d& poly, double offset, ClipperLib::JoinTyp
   co.AddPaths(p, joinType, ClipperLib::etClosedPolygon);
   ClipperLib::PolyTree result;
   co.Execute(result, std::ldexp(offset, pow2));
-  return toPolygon2d(result, pow2);
+  return toPolygon2d(result, pow2, poly.attributes);
 }
 } // namespace ClipperUtils

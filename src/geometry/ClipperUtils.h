@@ -17,7 +17,7 @@ ClipperLib::Paths fromPolygon2d(const Polygon2d& poly, int pow2);
 ClipperLib::PolyTree sanitize(const ClipperLib::Paths& paths);
 VectorOfVector2d fromPath(ClipperLib::Path path, int pow2);
 Polygon2d *sanitize(const Polygon2d& poly);
-Polygon2d *toPolygon2d(const ClipperLib::PolyTree& poly, int pow2);
+Polygon2d *toPolygon2d(const ClipperLib::PolyTree& poly, int pow2, Geometry::Attributes attr);
 ClipperLib::Paths process(const ClipperLib::Paths& polygons,
                           ClipperLib::ClipType, ClipperLib::PolyFillType);
 Polygon2d *applyOffset(const Polygon2d& poly, double offset, ClipperLib::JoinType joinType, double miter_limit, double arc_tolerance);

@@ -552,7 +552,7 @@ FreetypeRenderer::TextMetrics::TextMetrics(
   ok = true;
 }
 
-std::vector<const Geometry *> FreetypeRenderer::render(const FreetypeRenderer::Params& params) const
+std::vector<const Geometry *> FreetypeRenderer::render(const FreetypeRenderer::Params& params, Geometry::Attributes attr) const
 {
   ShapeResults sr(params);
 
@@ -562,7 +562,7 @@ std::vector<const Geometry *> FreetypeRenderer::render(const FreetypeRenderer::P
 
   DrawingCallback callback(params.segments, params.size);
   for (const auto& glyph : sr.glyph_array) {
-    callback.start_glyph();
+    callback.start_glyph(attr);
     callback.set_glyph_offset(
       sr.x_offset + glyph.get_x_offset(),
       sr.y_offset + glyph.get_y_offset());

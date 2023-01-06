@@ -36,7 +36,7 @@ public:
   DrawingCallback(unsigned long fn, double size);
   virtual ~DrawingCallback();
 
-  void start_glyph();
+  void start_glyph(Geometry::Attributes attr);
   void finish_glyph();
   void set_glyph_offset(double offset_x, double offset_y);
   void add_glyph_advance(double advance_x, double advance_y);

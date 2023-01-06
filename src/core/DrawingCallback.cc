@@ -41,9 +41,9 @@ DrawingCallback::~DrawingCallback()
   delete this->polygon;
 }
 
-void DrawingCallback::start_glyph()
+void DrawingCallback::start_glyph(Geometry::Attributes attr)
 {
-  this->polygon = new Polygon2d();
+  this->polygon = new Polygon2d(attr);
   this->polygon->setSanitized(true);
 }
 

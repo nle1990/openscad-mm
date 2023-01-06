@@ -7,6 +7,7 @@
 #include "AST.h"
 #include "ModuleInstantiation.h"
 #include "linalg.h" //Color4f
+#include "Geometry.h"
 
 extern int progress_report_count;
 extern void (*progress_report_f)(const std::shared_ptr<const AbstractNode> &, void *, int);
@@ -67,6 +68,10 @@ public:
   std::string derivedMaterialName = "";
   std::string derivedPartName = "";
   Color4f derivedColor;
+
+  Geometry::Attributes getGeometryAttributes() const {
+    return {.materialName = derivedMaterialName, .partName = derivedPartName, .color = derivedColor, .metadataCollected = true};
+  }
 
   std::shared_ptr<const AbstractNode> getNodeByID(int idx, std::deque<std::shared_ptr<const AbstractNode> >& path) const;
 };

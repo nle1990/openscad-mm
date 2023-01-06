@@ -64,7 +64,7 @@ static std::shared_ptr<AbstractNode> builtin_text(const ModuleInstantiation *ins
 std::vector<const Geometry *> TextNode::createGeometryList() const
 {
   FreetypeRenderer renderer;
-  return renderer.render(this->get_params());
+  return renderer.render(this->get_params(), getGeometryAttributes());
 }
 
 FreetypeRenderer::Params TextNode::get_params() const

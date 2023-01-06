@@ -666,7 +666,7 @@ public:
 
 const Geometry *SquareNode::createGeometry() const
 {
-  auto p = new Polygon2d();
+  auto p = new Polygon2d(this->getGeometryAttributes());
   if (
     this->x <= 0 || !std::isfinite(this->x)
     || this->y <= 0 || !std::isfinite(this->y)
@@ -750,7 +750,7 @@ public:
 
 const Geometry *CircleNode::createGeometry() const
 {
-  auto p = new Polygon2d();
+  auto p = new Polygon2d(this->getGeometryAttributes());
   if (this->r <= 0 || !std::isfinite(this->r)) {
     return p;
   }
@@ -851,7 +851,7 @@ std::string PolygonNode::toString() const
 
 const Geometry *PolygonNode::createGeometry() const
 {
-  auto p = new Polygon2d();
+  auto p = new Polygon2d(this->getGeometryAttributes());
   if (this->paths.empty() && this->points.size() > 2) {
     Outline2d outline;
     for (const auto& point : this->points) {

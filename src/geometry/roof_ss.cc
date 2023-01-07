@@ -73,12 +73,12 @@ std::vector<CGAL_Polygon_with_holes_2> polygons_with_holes(const ClipperLib::Pol
 
 PolySet *straight_skeleton_roof(const Polygon2d& poly)
 {
-  PolySet *hat = new PolySet(3);
+  PolySet *hat = new PolySet(3, poly.attributes);
 
   int scale_pow2 = ClipperUtils::getScalePow2(poly.getBoundingBox(), 32);
   ClipperLib::Paths paths = ClipperUtils::fromPolygon2d(poly, scale_pow2);
   ClipperLib::PolyTree polytree = ClipperUtils::sanitize(paths);
-  Polygon2d *poly_sanitized = ClipperUtils::toPolygon2d(polytree, scale_pow2, poly.attr);
+  Polygon2d *poly_sanitized = ClipperUtils::toPolygon2d(polytree, scale_pow2, poly.attributes);
 
   try {
     // roof

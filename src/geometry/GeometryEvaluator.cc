@@ -76,7 +76,7 @@ shared_ptr<const Geometry> GeometryEvaluator::evaluateGeometry(const AbstractNod
         bool convex = bool(ps->convexValue()); // bool is true only if tribool is true, (not indeterminate and not false)
         if (!convex) {
           assert(ps->getDimension() == 3);
-          auto ps_tri = new PolySet(3, ps->convexValue());
+          auto ps_tri = new PolySet(3, ps->attributes, ps->convexValue());
           ps_tri->setConvexity(ps->getConvexity());
           PolySetUtils::tessellate_faces(*ps, *ps_tri);
           this->root.reset(ps_tri);
@@ -139,7 +139,9 @@ GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren3D(const Abstr
   if (children.size() == 0) return ResultObject();
 
   if (op == OpenSCADOperator::HULL) {
-    PolySet *ps = new PolySet(3, /* convex */ true);
+    //FIXME-MM: I actually think this would need to be the first child, or various special cases, or what have you. as it stands, this is not correct
+    Geometry::Attributes resultAttributes = node.getGeometryAttributes();
+    PolySet *ps = new PolySet(3, resultAttributes, /* convex */ true);
 
     if (CGALUtils::applyHull(children, *ps)) {
       return ps;
@@ -199,7 +201,7 @@ GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren3D(const Abstr
 Polygon2d *GeometryEvaluator::applyHull2D(const AbstractNode& node)
 {
   std::vector<const Polygon2d *> children = collectChildren2D(node);
-  Polygon2d *geometry = new Polygon2d();
+  Polygon2d *geometry = new Polygon2d(node.getGeometryAttributes()); //FIXME-MM: I think node is the wrong node, since it's the hull node, we need the attributes of the children
 
   typedef CGAL::Point_2<CGAL::Cartesian<double>> CGALPoint2;
   // Collect point cloud
@@ -241,7 +243,7 @@ Polygon2d *GeometryEvaluator::applyFill2D(const AbstractNode& node)
   // Keep only the 'positive' outlines, eg: the outside edges
   for (const auto& outline : geometry_in->outlines()) {
     if (outline.positive) {
-      Polygon2d *poly = new Polygon2d();
+      Polygon2d *poly = new Polygon2d(node.getGeometryAttributes()); //FIXME-MM: I think node is the wrong node, we need the attributes of the children
       poly->addOutline(outline);
       newchildren.push_back(poly);
     }
@@ -255,7 +257,9 @@ Geometry *GeometryEvaluator::applyHull3D(const AbstractNode& node)
 {
   Geometry::Geometries children = collectChildren3D(node);
 
-  PolySet *P = new PolySet(3);
+  //FIXME-MM: I actually think this would need to be the first child, or various special cases, or what have you. as it stands, this is not correct
+  Geometry::Attributes resultAttributes = node.getGeometryAttributes();
+  PolySet *P = new PolySet(3, resultAttributes);
   if (CGALUtils::applyHull(children, *P)) {
     return P;
   }
@@ -1108,7 +1112,10 @@ static Geometry *extrudePolygon(const LinearExtrudeNode& node, const Polygon2d& 
   boost::tribool isConvex{poly.is_convex()};
   // Twist or non-uniform scale makes convex polygons into unknown polyhedrons
   if (isConvex && non_linear) isConvex = unknown;
-  PolySet *ps = new PolySet(3, isConvex);
+
+  //FIXME-MM: I actually think this would need to be the first child, or various special cases, or what have you. as it stands, this is not correct
+  Geometry::Attributes resultAttributes = node.getGeometryAttributes();
+  PolySet *ps = new PolySet(3, resultAttributes, isConvex);
   ps->setConvexity(node.convexity);
   if (node.height <= 0) return ps;
 
@@ -1156,7 +1163,7 @@ static Geometry *extrudePolygon(const LinearExtrudeNode& node, const Polygon2d& 
   }
 
   // Calculate outline segments if appropriate.
-  Polygon2d seg_poly;
+  Polygon2d seg_poly(resultAttributes); //FIXME-MM: again, not sure this is right. not sure it even matters in this case, but maybe
   bool is_segmented = false;
   if (node.has_segments) {
     // Set segments = 0 to disable
@@ -1264,7 +1271,7 @@ Response GeometryEvaluator::visit(State& state, const LinearExtrudeNode& node)
       if (!node.filename.empty()) {
         DxfData dxf(node.fn, node.fs, node.fa, node.filename, node.layername, node.origin_x, node.origin_y, node.scale_x);
 
-        Polygon2d *p2d = dxf.toPolygon2d();
+        Polygon2d *p2d = dxf.toPolygon2d(node.getGeometryAttributes()); //FIXME-MM: I think node is the wrong node, we need the attributes of the children
         if (p2d) geometry = ClipperUtils::sanitize(*p2d);
         delete p2d;
       } else {
@@ -1326,7 +1333,9 @@ static Geometry *rotatePolygon(const RotateExtrudeNode& node, const Polygon2d& p
 {
   if (node.angle == 0) return nullptr;
 
-  PolySet *ps = new PolySet(3);
+  //FIXME-MM: I actually think this would need to be the first child, or various special cases, or what have you. as it stands, this is not correct
+  Geometry::Attributes resultAttributes = node.getGeometryAttributes();
+  PolySet *ps = new PolySet(3, resultAttributes);
   ps->setConvexity(node.convexity);
 
   double min_x = 0;
@@ -1417,7 +1426,7 @@ Response GeometryEvaluator::visit(State& state, const RotateExtrudeNode& node)
       const Geometry *geometry = nullptr;
       if (!node.filename.empty()) {
         DxfData dxf(node.fn, node.fs, node.fa, node.filename, node.layername, node.origin_x, node.origin_y, node.scale);
-        Polygon2d *p2d = dxf.toPolygon2d();
+        Polygon2d *p2d = dxf.toPolygon2d(node.getGeometryAttributes()); //FIXME-MM: I think node is the wrong node, we need the attributes of the children
         if (p2d) geometry = ClipperUtils::sanitize(*p2d);
         delete p2d;
       } else {
@@ -1507,7 +1516,7 @@ shared_ptr<const Geometry> GeometryEvaluator::projectionNoCut(const ProjectionNo
   sumclipper.StrictlySimple(true);
   sumclipper.Execute(ClipperLib::ctUnion, sumresult, ClipperLib::pftNonZero, ClipperLib::pftNonZero);
   if (sumresult.Total() > 0) {
-    geom.reset(ClipperUtils::toPolygon2d(sumresult, pow2));
+    geom.reset(ClipperUtils::toPolygon2d(sumresult, pow2,node.getGeometryAttributes())); //FIXME-MM: I think node is the wrong node, we need the attributes of the children
   }
 
   return geom;
@@ -1648,7 +1657,9 @@ Response GeometryEvaluator::visit(State& state, const RoofNode& node)
         } catch (RoofNode::roof_exception& e) {
           LOG(message_group::Error, node.modinst->location(), this->tree.getDocumentPath(),
               "Skeleton computation error. " + e.message());
-          roof = new PolySet(3);
+          //FIXME-MM: I actually think this would need to be the first child, or various special cases, or what have you. as it stands, this is not correct
+          Geometry::Attributes resultAttributes = node.getGeometryAttributes();
+          roof = new PolySet(3, resultAttributes);
         }
         assert(roof);
         geom.reset(roof);

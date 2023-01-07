@@ -228,7 +228,7 @@ bool applyHull(const Geometry::Geometries& children, PolySet& result)
 /*!
    children cannot contain nullptr objects
  */
-shared_ptr<const Geometry> applyMinkowski(const Geometry::Geometries& children)
+shared_ptr<const Geometry> applyMinkowski(const Geometry::Geometries& children, Geometry::Attributes attr) //FIXME-MM: possibly just check children for being the same and error out if they are not instead of second param here
 {
   if (Feature::ExperimentalFastCsg.is_enabled()) {
     return applyMinkowskiHybrid(children);
@@ -394,7 +394,7 @@ shared_ptr<const Geometry> applyMinkowski(const Geometry::Geometries& children)
       if (it != std::next(children.begin())) operands[0].reset();
 
       auto partToGeom = [&](auto& poly) -> shared_ptr<const Geometry> {
-          PolySet *ps = new PolySet(3, /* convex= */ true);
+          PolySet *ps = new PolySet(3, attr, /* convex= */ true);
           createPolySetFromPolyhedron(poly, *ps);
           return shared_ptr<const Geometry>(ps);
         };

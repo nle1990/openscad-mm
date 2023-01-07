@@ -332,7 +332,7 @@ Faces_2_plus_1 vd_inner_faces(const voronoi_diagram& vd,
 
 PolySet *voronoi_diagram_roof(const Polygon2d& poly, double fa, double fs)
 {
-  PolySet *hat = new PolySet(3);
+  PolySet *hat = new PolySet(3, poly.attributes);
 
   try {
 
@@ -363,7 +363,7 @@ PolySet *voronoi_diagram_roof(const Polygon2d& poly, double fa, double fs)
         RAISE_ROOF_EXCEPTION("Voronoi error");
       }
       // convex partition (actually a triangulation - maybe do a proper convex partition later)
-      Polygon2d face_poly;
+      Polygon2d face_poly(poly.attributes);
       Outline2d outline;
       outline.vertices = face;
       face_poly.addOutline(outline);
@@ -387,7 +387,7 @@ PolySet *voronoi_diagram_roof(const Polygon2d& poly, double fa, double fs)
     {
       // poly has to go through clipper just as it does for the roof
       // because this may change coordinates
-      Polygon2d poly_floor;
+      Polygon2d poly_floor(poly.attributes);
       for (auto path : paths) {
         Outline2d o;
         for (auto p : path) {

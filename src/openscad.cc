@@ -555,7 +555,7 @@ int do_export(const CommandLine& cmd, const RenderVariables& render_variables, F
           LOG(message_group::None, Location::NONE, "", "Converted to Nef polyhedron");
         }
       } else {
-        root_geom.reset(new CGAL_Nef_polyhedron());
+        root_geom.reset(new CGAL_Nef_polyhedron(nullptr, Geometry::Attributes{.metadataCollected = true}));
       }
     }
 

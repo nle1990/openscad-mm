@@ -138,12 +138,13 @@ GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren3D(const Abstr
   Geometry::Geometries children = collectChildren3D(node);
   if (children.size() == 0) return ResultObject();
 
+  //FIXME-MM: I actually think this would need to be the first child, or various special cases, or what have you. as it stands, this is not correct
+  Geometry::Attributes resultAttributes = node.getGeometryAttributes();
+
   if (op == OpenSCADOperator::HULL) {
-    //FIXME-MM: I actually think this would need to be the first child, or various special cases, or what have you. as it stands, this is not correct
-    Geometry::Attributes resultAttributes = node.getGeometryAttributes();
     PolySet *ps = new PolySet(3, resultAttributes, /* convex */ true);
 
-    if (CGALUtils::applyHull(children, *ps)) {
+    if (CGALUtils::applyHull(children, *ps, resultAttributes)) {//FIXME-MM: resultAttributes
       return ps;
     }
 
@@ -168,7 +169,7 @@ GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren3D(const Abstr
     }
     if (actualchildren.empty()) return ResultObject();
     if (actualchildren.size() == 1) return ResultObject(actualchildren.front().second);
-    return ResultObject(CGALUtils::applyMinkowski(actualchildren));
+    return ResultObject(CGALUtils::applyMinkowski(actualchildren, resultAttributes)); //FIXME-MM: resultAttributes
     break;
   }
   case OpenSCADOperator::UNION:
@@ -179,12 +180,12 @@ GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren3D(const Abstr
     }
     if (actualchildren.empty()) return ResultObject();
     if (actualchildren.size() == 1) return ResultObject(actualchildren.front().second);
-    return ResultObject(CGALUtils::applyUnion3D(actualchildren.begin(), actualchildren.end()));
+    return ResultObject(CGALUtils::applyUnion3D(actualchildren.begin(), actualchildren.end(), resultAttributes));  //FIXME-MM: resultAttributes
     break;
   }
   default:
   {
-    return ResultObject(CGALUtils::applyOperator3D(children, op));
+    return ResultObject(CGALUtils::applyOperator3D(children, op, resultAttributes));  //FIXME-MM: resultAttributes
     break;
   }
   }
@@ -235,22 +236,25 @@ Polygon2d *GeometryEvaluator::applyHull2D(const AbstractNode& node)
 
 Polygon2d *GeometryEvaluator::applyFill2D(const AbstractNode& node)
 {
+  //FIXME-MM: I actually think this would need to be the first child, or various special cases, or what have you. as it stands, this is not correct
+  Geometry::Attributes resultAttributes = node.getGeometryAttributes();
+
   // Merge and sanitize input geometry
   std::vector<const Polygon2d *> children = collectChildren2D(node);
-  Polygon2d *geometry_in = ClipperUtils::apply(children, ClipperLib::ctUnion);
+  Polygon2d *geometry_in = ClipperUtils::apply(children, ClipperLib::ctUnion, resultAttributes); //FIXME-MM: resultAttributes
 
   std::vector<const Polygon2d *> newchildren;
   // Keep only the 'positive' outlines, eg: the outside edges
   for (const auto& outline : geometry_in->outlines()) {
     if (outline.positive) {
-      Polygon2d *poly = new Polygon2d(node.getGeometryAttributes()); //FIXME-MM: I think node is the wrong node, we need the attributes of the children
+      Polygon2d *poly = new Polygon2d(resultAttributes); //FIXME-MM: resultAttributes
       poly->addOutline(outline);
       newchildren.push_back(poly);
     }
   }
 
   // Re-merge geometry in case of nested outlines
-  return ClipperUtils::apply(newchildren, ClipperLib::ctUnion);
+  return ClipperUtils::apply(newchildren, ClipperLib::ctUnion, resultAttributes); //FIXME-MM: resultAttributes
 }
 
 Geometry *GeometryEvaluator::applyHull3D(const AbstractNode& node)
@@ -260,7 +264,7 @@ Geometry *GeometryEvaluator::applyHull3D(const AbstractNode& node)
   //FIXME-MM: I actually think this would need to be the first child, or various special cases, or what have you. as it stands, this is not correct
   Geometry::Attributes resultAttributes = node.getGeometryAttributes();
   PolySet *P = new PolySet(3, resultAttributes);
-  if (CGALUtils::applyHull(children, *P)) {
+  if (CGALUtils::applyHull(children, *P, resultAttributes)) { //FIXME-MM: resultAttributes
     return P;
   }
   delete P;
@@ -269,9 +273,11 @@ Geometry *GeometryEvaluator::applyHull3D(const AbstractNode& node)
 
 Polygon2d *GeometryEvaluator::applyMinkowski2D(const AbstractNode& node)
 {
+  //FIXME-MM: I actually think this would need to be the first child, or various special cases, or what have you. as it stands, this is not correct
+  Geometry::Attributes resultAttributes = node.getGeometryAttributes();
   std::vector<const Polygon2d *> children = collectChildren2D(node);
   if (!children.empty()) {
-    return ClipperUtils::applyMinkowski(children);
+    return ClipperUtils::applyMinkowski(children, resultAttributes); //FIXME-MM: resultAttributes
   }
   return nullptr;
 }
@@ -386,6 +392,9 @@ Geometry::Geometries GeometryEvaluator::collectChildren3D(const AbstractNode& no
  */
 Polygon2d *GeometryEvaluator::applyToChildren2D(const AbstractNode& node, OpenSCADOperator op)
 {
+  //FIXME-MM: I actually think this would need to be the first child, or various special cases, or what have you. as it stands, this is not correct
+  Geometry::Attributes resultAttributes = node.getGeometryAttributes();
+
   node.progress_report();
   if (op == OpenSCADOperator::MINKOWSKI) {
     return applyMinkowski2D(node);
@@ -426,7 +435,7 @@ Polygon2d *GeometryEvaluator::applyToChildren2D(const AbstractNode& node, OpenSC
     break;
   }
 
-  return ClipperUtils::apply(children, clipType);
+  return ClipperUtils::apply(children, clipType, resultAttributes); //FIXME-MM: resultAttributes
 }
 
 /*!
@@ -711,6 +720,9 @@ Response GeometryEvaluator::visit(State& state, const LeafNode& node)
 
 Response GeometryEvaluator::visit(State& state, const TextNode& node)
 {
+  //FIXME-MM: I actually think this would need to be the first child, or various special cases, or what have you. as it stands, this is not correct
+  Geometry::Attributes resultAttributes = node.getGeometryAttributes();
+
   if (state.isPrefix()) {
     shared_ptr<const Geometry> geom;
     if (!isSmartCached(node)) {
@@ -721,7 +733,7 @@ Response GeometryEvaluator::visit(State& state, const TextNode& node)
         assert(polygon);
         polygonlist.push_back(polygon);
       }
-      geom.reset(ClipperUtils::apply(polygonlist, ClipperLib::ctUnion));
+      geom.reset(ClipperUtils::apply(polygonlist, ClipperLib::ctUnion, resultAttributes)); //FIXME-MM resultAttributes
     } else geom = GeometryCache::instance()->get(this->tree.getIdString(node));
     addToParent(state, node, geom);
     node.progress_report();

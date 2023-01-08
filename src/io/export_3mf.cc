@@ -123,7 +123,7 @@ static bool append_nef(const CGAL_Nef_polyhedron& root_N, PLib3MFModelMeshObject
     LOG(message_group::Export_Warning, Location::NONE, "", "Exported object may not be a valid 2-manifold and may need repair");
   }
 
-  PolySet ps{3};
+  PolySet ps{3, Geometry::Attributes{.metadataCollected = true}}; //FIXME-MM properly export attributes instead of this
   const bool err = CGALUtils::createPolySetFromNefPolyhedron3(*root_N.p3, ps);
   if (err) {
     export_3mf_error("Error converting NEF Polyhedron.", model);
@@ -144,7 +144,7 @@ static bool append_3mf(const shared_ptr<const Geometry>& geom, PLib3MFModelMeshO
   } else if (const auto hybrid = dynamic_pointer_cast<const CGALHybridPolyhedron>(geom)) {
     return append_polyset(*hybrid->toPolySet(), model);
   } else if (const auto ps = dynamic_pointer_cast<const PolySet>(geom)) {
-    PolySet triangulated(3);
+    PolySet triangulated(3, Geometry::Attributes{.metadataCollected = true});  //FIXME-MM properly export attributes instead of this
     PolySetUtils::tessellate_faces(*ps, triangulated);
     return append_polyset(triangulated, model);
   } else if (dynamic_pointer_cast<const Polygon2d>(geom)) {
@@ -311,7 +311,7 @@ static bool append_3mf(const shared_ptr<const Geometry>& geom, Lib3MF::PWrapper&
   } else if (const auto hybrid = dynamic_pointer_cast<const CGALHybridPolyhedron>(geom)) {
     return append_polyset(*hybrid->toPolySet(), wrapper, model);
   } else if (const auto ps = dynamic_pointer_cast<const PolySet>(geom)) {
-    PolySet triangulated(3);
+    PolySet triangulated(3, Geometry::Attributes{.metadataCollected = true});  //FIXME-MM properly export attributes instead of this
     PolySetUtils::tessellate_faces(*ps, triangulated);
     return append_polyset(triangulated, wrapper, model);
   } else if (dynamic_pointer_cast<const Polygon2d>(geom)) {

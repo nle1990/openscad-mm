@@ -604,9 +604,9 @@ std::string DxfData::dump() const
 /*
     May return an empty polygon, but will not return nullptr
  */
-Polygon2d *DxfData::toPolygon2d() const
+Polygon2d *DxfData::toPolygon2d(Geometry::Attributes attr) const
 {
-  auto poly = new Polygon2d();
+  auto poly = new Polygon2d(attr);
   for (size_t i = 0; i < this->paths.size(); ++i) {
     const auto& path = this->paths[i];
     Outline2d outline;

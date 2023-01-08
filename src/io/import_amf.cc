@@ -134,7 +134,7 @@ void AmfImporter::set_v3(AmfImporter *importer, const xmlChar *value)
 
 void AmfImporter::start_object(AmfImporter *importer, const xmlChar *)
 {
-  importer->polySet = new PolySet(3);
+  importer->polySet = new PolySet(3, Geometry::Attributes{.metadataCollected = true}); //FIXME-MM: set up attributes properly
 }
 
 void AmfImporter::end_object(AmfImporter *importer, const xmlChar *)
@@ -269,16 +269,16 @@ PolySet *AmfImporter::read(const std::string& filename)
       children.push_back(std::make_pair(std::shared_ptr<AbstractNode>(),  shared_ptr<const Geometry>(*it)));
     }
 
-    if (auto ps = CGALUtils::getGeometryAsPolySet(CGALUtils::applyUnion3D(children.begin(), children.end()))) {
+    if (auto ps = CGALUtils::getGeometryAsPolySet(CGALUtils::applyUnion3D(children.begin(), children.end()))) { //FIXME-MM: remove union and set up attributes properly
       p = new PolySet(*ps);
     } else {
       LOG(message_group::Error, Location::NONE, "", "Error importing multi-object AMF file '%1$s', import() at line %2$d", filename, this->loc.firstLine());
-      p = new PolySet(3);
+      p = new PolySet(3, Geometry::Attributes{.metadataCollected = true});
     }
   }
 #endif // ifdef ENABLE_CGAL
   if (!p) {
-    p = new PolySet(3);
+    p = new PolySet(3, Geometry::Attributes{.metadataCollected = true});
   }
   polySets.clear();
   return p;

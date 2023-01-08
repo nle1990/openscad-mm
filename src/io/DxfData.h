@@ -2,6 +2,7 @@
 
 #include <vector>
 #include "linalg.h"
+#include "Geometry.h"
 
 class DxfData
 {
@@ -40,5 +41,5 @@ public:
 
   void fixup_path_direction();
   std::string dump() const;
-  class Polygon2d *toPolygon2d() const;
+  class Polygon2d *toPolygon2d(Geometry::Attributes attr) const;
 };

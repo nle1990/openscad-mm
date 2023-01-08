@@ -124,7 +124,7 @@ ClipperLib::Paths process(const ClipperLib::Paths& polygons,
    May return an empty Polygon2d, but will not return nullptr.
  */
 Polygon2d *apply(const std::vector<ClipperLib::Paths>& pathsvector,
-                 ClipperLib::ClipType clipType, int pow2, Geometry::Attributes attr) //FIXME: is this the best way here?
+                 ClipperLib::ClipType clipType, int pow2, Geometry::Attributes attr) //FIXME-MM: is this the best way here?
 {
   ClipperLib::Clipper clipper;
 
@@ -163,7 +163,7 @@ Polygon2d *apply(const std::vector<ClipperLib::Paths>& pathsvector,
    May return an empty Polygon2d, but will not return nullptr.
  */
 Polygon2d *apply(const std::vector<const Polygon2d *>& polygons,
-                 ClipperLib::ClipType clipType, Geometry::Attributes attr) //FIXME: is this the best way here? check if all polygons in teh vector have the same attributes instead? but what if not?
+                 ClipperLib::ClipType clipType, Geometry::Attributes attr) //FIXME-MM: is this the best way here? check if all polygons in teh vector have the same attributes instead? but what if not?
 {
   BoundingBox bounds;
   for (auto polygon : polygons) {
@@ -252,7 +252,7 @@ static void fill_minkowski_insides(const ClipperLib::Paths& a,
   }
 }
 
-Polygon2d *applyMinkowski(const std::vector<const Polygon2d *>& polygons, Geometry::Attributes attr) //FIXME: possibly change (also attr does not get used if there is only one polygon in the list, in some cases)
+Polygon2d *applyMinkowski(const std::vector<const Polygon2d *>& polygons, Geometry::Attributes attr) //FIXME-MM: possibly change (also attr does not get used if there is only one polygon in the list, in some cases)
 {
   if (polygons.size() == 1) {
     return polygons[0] ? new Polygon2d(*polygons[0]) : nullptr; // Just copy

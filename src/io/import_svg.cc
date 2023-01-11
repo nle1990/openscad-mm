@@ -207,7 +207,7 @@ Polygon2d *import_svg(double fn, double fs, double fa,
       }
     }
     libsvg_free(shapes);
-    return ClipperUtils::apply(polygons, ClipperLib::ctUnion);
+    return ClipperUtils::apply(polygons, ClipperLib::ctUnion, Geometry::Attributes{.metadataCollected = true}); //FIXME-MM: maybe we could extract metadata here, especially color
   } catch (const std::exception& e) {
     LOG(message_group::Error, Location::NONE, "", "%1$s, import() at line %2$d", e.what(), loc.firstLine());
     return new Polygon2d(Geometry::Attributes{.metadataCollected = true});

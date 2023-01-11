@@ -196,7 +196,7 @@ Geometry *import_3mf(const std::string& filename, const Location& loc)
     for (polysets_t::iterator it = meshes.begin(); it != meshes.end(); ++it) {
       children.push_back(std::make_pair(std::shared_ptr<AbstractNode>(),  shared_ptr<const Geometry>(*it)));
     }
-    if (auto ps = CGALUtils::getGeometryAsPolySet(CGALUtils::applyUnion3D(children.begin(), children.end()))) { //FIXME-MM: set attributes properly, and do not union
+    if (auto ps = CGALUtils::getGeometryAsPolySet(CGALUtils::applyUnion3D(children.begin(), children.end(), Geometry::Attributes{.metadataCollected = true}))) { //FIXME-MM: set attributes properly, and do not union
       p = new PolySet(*ps);
     } else {
       p = new PolySet(3, Geometry::Attributes{.metadataCollected = true});

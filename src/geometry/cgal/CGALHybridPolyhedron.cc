@@ -42,9 +42,10 @@ CGALHybridPolyhedron& CGALHybridPolyhedron::operator=(const CGALHybridPolyhedron
   return *this;
 }
 
-CGALHybridPolyhedron::CGALHybridPolyhedron()
+CGALHybridPolyhedron::CGALHybridPolyhedron(Geometry::Attributes attr)
 {
   data = make_shared<CGAL_HybridMesh>();
+  attributes = attr;
 }
 
 std::shared_ptr<CGAL_HybridNef> CGALHybridPolyhedron::getNefPolyhedron() const
@@ -116,12 +117,12 @@ bool CGALHybridPolyhedron::isValid() const
 shared_ptr<const PolySet> CGALHybridPolyhedron::toPolySet() const
 {
   if (auto mesh = getMesh()) {
-    auto ps = make_shared<PolySet>(3, /* convex */ unknown);
+    auto ps = make_shared<PolySet>(3, attributes, /* convex */ unknown);
     auto err = CGALUtils::createPolySetFromMesh(*mesh, *ps);
     assert(!err);
     return ps;
   } else if (auto nef = getNefPolyhedron()) {
-    auto ps = make_shared<PolySet>(3, /* convex */ unknown);
+    auto ps = make_shared<PolySet>(3, attributes, /* convex */ unknown);
     auto err = CGALUtils::createPolySetFromNefPolyhedron3(*nef, *ps);
     assert(!err);
     return ps;

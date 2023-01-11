@@ -15,7 +15,7 @@
 namespace CGALUtils {
 
 template <typename K>
-std::shared_ptr<CGALHybridPolyhedron> createHybridPolyhedronFromPolyhedron(const CGAL::Polyhedron_3<K>& poly)
+std::shared_ptr<CGALHybridPolyhedron> createHybridPolyhedronFromPolyhedron(const CGAL::Polyhedron_3<K>& poly, Geometry::Attributes attr) //FIXME-MM: if you change this, you also need to change it in cgalutils.h
 {
   CGAL::Surface_mesh<CGAL::Point_3<K>> mesh;
   CGAL::copy_face_graph(poly, mesh);
@@ -24,10 +24,10 @@ std::shared_ptr<CGALHybridPolyhedron> createHybridPolyhedronFromPolyhedron(const
   copyMesh(mesh, *hybrid_mesh);
   CGALUtils::triangulateFaces(*hybrid_mesh);
 
-  return make_shared<CGALHybridPolyhedron>(hybrid_mesh);
+  return make_shared<CGALHybridPolyhedron>(hybrid_mesh, attr);
 }
 
-template std::shared_ptr<CGALHybridPolyhedron> createHybridPolyhedronFromPolyhedron(const CGAL::Polyhedron_3<CGAL::Epick>& poly);
+template std::shared_ptr<CGALHybridPolyhedron> createHybridPolyhedronFromPolyhedron(const CGAL::Polyhedron_3<CGAL::Epick>& poly, Geometry::Attributes attr);
 
 bool hasOnlyTriangles(const PolySet& ps) {
   for (auto& p : ps.polygons) {
@@ -54,14 +54,14 @@ std::shared_ptr<CGALHybridPolyhedron> createHybridPolyhedronFromPolySet(const Po
     for (size_t i = 0, n = points3d.size(); i < n; i++) {
       points[i] = vector_convert<K::Point_3>(points3d[i]);
     }
-    if (points.size() <= 3) return make_shared<CGALHybridPolyhedron>();
+    if (points.size() <= 3) return make_shared<CGALHybridPolyhedron>(ps.attributes);
 
     // Apply hull
     CGAL::Surface_mesh<CGAL::Point_3<K>> r;
     CGAL::convex_hull_3(points.begin(), points.end(), r);
     auto r_exact = make_shared<CGAL_HybridMesh>();
     copyMesh(r, *r_exact);
-    return make_shared<CGALHybridPolyhedron>(r_exact);
+    return make_shared<CGALHybridPolyhedron>(r_exact, ps.attributes);
   }
 
   auto mesh = make_shared<CGAL_HybridMesh>();
@@ -79,7 +79,7 @@ std::shared_ptr<CGALHybridPolyhedron> createHybridPolyhedronFromPolySet(const Po
     }
   }
 
-  return make_shared<CGALHybridPolyhedron>(mesh);
+  return make_shared<CGALHybridPolyhedron>(mesh, ps.attributes);
 }
 
 std::shared_ptr<CGALHybridPolyhedron> createHybridPolyhedronFromNefPolyhedron(const CGAL_Nef_polyhedron& nef)
@@ -92,7 +92,7 @@ std::shared_ptr<CGALHybridPolyhedron> createHybridPolyhedronFromNefPolyhedron(co
   convertNefPolyhedronToTriangleMesh(*nef.p3, alien_mesh);
   copyMesh(alien_mesh, *mesh);
 
-  return make_shared<CGALHybridPolyhedron>(mesh);
+  return make_shared<CGALHybridPolyhedron>(mesh, nef.attributes);
 }
 
 std::shared_ptr<CGALHybridPolyhedron> createMutableHybridPolyhedronFromGeometry(const std::shared_ptr<const Geometry>& geom)
@@ -125,7 +125,7 @@ shared_ptr<CGAL_Nef_polyhedron> createNefPolyhedronFromHybrid(const CGALHybridPo
     CGAL_SurfaceMesh alien_mesh;
     copyMesh(*mesh, alien_mesh);
 
-    return make_shared<CGAL_Nef_polyhedron>(make_shared<CGAL_Nef_polyhedron3>(alien_mesh));
+    return make_shared<CGAL_Nef_polyhedron>(make_shared<CGAL_Nef_polyhedron3>(alien_mesh), hybrid.attributes);
   }
   if (auto nef = hybrid.getNefPolyhedron()) {
     CGAL_HybridMesh mesh;
@@ -134,7 +134,7 @@ shared_ptr<CGAL_Nef_polyhedron> createNefPolyhedronFromHybrid(const CGALHybridPo
     CGAL_SurfaceMesh alien_mesh;
     copyMesh(mesh, alien_mesh);
 
-    return make_shared<CGAL_Nef_polyhedron>(make_shared<CGAL_Nef_polyhedron3>(alien_mesh));
+    return make_shared<CGAL_Nef_polyhedron>(make_shared<CGAL_Nef_polyhedron3>(alien_mesh), hybrid.attributes);
   } else {
     assert(!"Invalid hybrid polyhedron state");
     return nullptr;

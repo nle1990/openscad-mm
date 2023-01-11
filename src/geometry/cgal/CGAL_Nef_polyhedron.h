@@ -29,10 +29,12 @@ public:
   }
 
   void reset() { p3.reset(); }
+/*
+//FIXME-MM: These can only work if the attributes are the same, maybe replace them with something else
   CGAL_Nef_polyhedron operator+(const CGAL_Nef_polyhedron& other) const;
   CGAL_Nef_polyhedron& operator+=(const CGAL_Nef_polyhedron& other);
   CGAL_Nef_polyhedron& operator*=(const CGAL_Nef_polyhedron& other);
-  CGAL_Nef_polyhedron& operator-=(const CGAL_Nef_polyhedron& other);
+  CGAL_Nef_polyhedron& operator-=(const CGAL_Nef_polyhedron& other);*/
   CGAL_Nef_polyhedron& minkowski(const CGAL_Nef_polyhedron& other);
   virtual void transform(const Transform3d& matrix) override;
   virtual void resize(const Vector3d& newsize, const Eigen::Matrix<bool, 3, 1>& autosize) override;

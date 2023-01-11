@@ -9,6 +9,7 @@
 #include "printutils.h"
 #include "CGALHybridPolyhedron.h"
 #include "node.h"
+#include "Geometry.h"
 
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/normal_vector_newell_3.h>
@@ -31,7 +32,9 @@ namespace CGALUtils {
 /*!
    children cannot contain nullptr objects
  */
-shared_ptr<const Geometry> applyMinkowskiHybrid(const Geometry::Geometries& children)
+shared_ptr<const Geometry> applyMinkowskiHybrid(const Geometry::Geometries& children, Geometry::Attributes attr)  //FIXME-MM: possibly just check children for being the same and error out if they are not instead of second param here
+//Also, if you change this back, you need to also change the declaration in cgalutils.h
+//and also in CGALHybridPolyhedron.h, where it is marked as a friend, and declaration
 {
   // TODO: use Surface_mesh everywhere!!!
   typedef CGAL::Epick Hull_kernel;
@@ -200,7 +203,7 @@ shared_ptr<const Geometry> applyMinkowskiHybrid(const Geometry::Geometries& chil
           auto mesh = make_shared<CGAL_HybridMesh>();
           CGAL::copy_face_graph(*poly, *mesh);
           CGALUtils::triangulateFaces(*mesh);
-          return make_shared<CGALHybridPolyhedron>(mesh);
+          return make_shared<CGALHybridPolyhedron>(mesh, attr); //FIXME-MM: attr?
         };
 
       if (result_parts.size() == 1) {
@@ -213,7 +216,7 @@ shared_ptr<const Geometry> applyMinkowskiHybrid(const Geometry::Geometries& chil
           fake_children.push_back(std::make_pair(std::shared_ptr<const AbstractNode>(),
                                                  partToGeom(part)));
         }
-        auto N = CGALUtils::applyUnion3D(fake_children.begin(), fake_children.end());
+        auto N = CGALUtils::applyUnion3D(fake_children.begin(), fake_children.end(), attr); //FIXME-MM: is this right?
         // FIXME: This should really never throw.
         // Assert once we figured out what went wrong with issue #1069?
         if (!N) throw 0;
@@ -222,7 +225,7 @@ shared_ptr<const Geometry> applyMinkowskiHybrid(const Geometry::Geometries& chil
         t.reset();
         operands[0] = N;
       } else {
-        operands[0] = shared_ptr<const Geometry>(new CGAL_Nef_polyhedron());
+        operands[0] = shared_ptr<const Geometry>(new CGAL_Nef_polyhedron(nullptr, attr)); //FIXME-MM: is this right?
       }
     }
 
@@ -234,7 +237,7 @@ shared_ptr<const Geometry> applyMinkowskiHybrid(const Geometry::Geometries& chil
     LOG(message_group::Warning, Location::NONE, "",
         "[fast-csg] Minkowski failed with error, falling back to Nef operation: %1$s\n", e.what());
 
-    auto N = shared_ptr<const Geometry>(applyOperator3D(children, OpenSCADOperator::MINKOWSKI));
+    auto N = shared_ptr<const Geometry>(applyOperator3D(children, OpenSCADOperator::MINKOWSKI, attr));  //FIXME-MM: is this right?
     return N;
   }
 }

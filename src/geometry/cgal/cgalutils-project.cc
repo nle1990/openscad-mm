@@ -45,9 +45,9 @@ static void add_outline_to_poly(CGAL_Nef_polyhedron2::Explorer& explorer,
   }
 }
 
-static Polygon2d *convertToPolygon2d(const CGAL_Nef_polyhedron2& p2)
+static Polygon2d *convertToPolygon2d(const CGAL_Nef_polyhedron2& p2, Geometry::Attributes attr)
 {
-  Polygon2d *poly = new Polygon2d;
+  Polygon2d *poly = new Polygon2d(attr);
 
   typedef CGAL_Nef_polyhedron2::Explorer Explorer;
   typedef Explorer::Face_const_iterator fci_t;
@@ -177,7 +177,7 @@ Polygon2d *project(const CGAL_Nef_polyhedron& N, bool cut)
   Polygon2d *poly = nullptr;
   if (N.getDimension() != 3) return poly;
 
-  CGAL_Nef_polyhedron newN;
+  CGAL_Nef_polyhedron newN(nullptr, N.attributes);
   if (cut) {
     try {
       CGAL_Nef_polyhedron3::Plane_3 xy_plane = CGAL_Nef_polyhedron3::Plane_3(0, 0, 1, 0);
@@ -225,7 +225,7 @@ Polygon2d *project(const CGAL_Nef_polyhedron& N, bool cut)
         }
         PRINTD("<!-- volume end. -->");
       }
-      poly = convertToPolygon2d(*zremover.output_nefpoly2d);
+      poly = convertToPolygon2d(*zremover.output_nefpoly2d, N.attributes);
     } catch (const CGAL::Failure_exception& e) {
       LOG(message_group::Error, Location::NONE, "", "CGAL error in CGALUtils::project while flattening: %1$s", e.what());
     }
@@ -234,7 +234,7 @@ Polygon2d *project(const CGAL_Nef_polyhedron& N, bool cut)
   }
   // In projection mode all the triangles are projected manually into the XY plane
   else {
-    PolySet ps(3);
+    PolySet ps(3, N.attributes);
     bool err = CGALUtils::createPolySetFromNefPolyhedron3(*N.p3, ps);
     if (err) {
       LOG(message_group::Error, Location::NONE, "", "Nef->PolySet failed");

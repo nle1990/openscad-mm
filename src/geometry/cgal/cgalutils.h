@@ -30,17 +30,18 @@ Result vector_convert(V const& v) {
 
 namespace CGALUtils {
 
-bool applyHull(const Geometry::Geometries& children, PolySet& P);
+bool applyHull(const Geometry::Geometries& children, PolySet& P, Geometry::Attributes attr);
 template <typename K>
 bool is_weakly_convex(const CGAL::Polyhedron_3<K>& p);
 template <typename K>
 bool is_weakly_convex(const CGAL::Surface_mesh<CGAL::Point_3<K>>& m);
-shared_ptr<const Geometry> applyOperator3D(const Geometry::Geometries& children, OpenSCADOperator op);
-shared_ptr<const Geometry> applyUnion3D(Geometry::Geometries::iterator chbegin, Geometry::Geometries::iterator chend);
-shared_ptr<CGALHybridPolyhedron> applyOperator3DHybrid(const Geometry::Geometries& children, OpenSCADOperator op);
+shared_ptr<const Geometry> applyOperator3D(const Geometry::Geometries& children, OpenSCADOperator op, Geometry::Attributes attr);
+shared_ptr<const Geometry> applyUnion3D(Geometry::Geometries::iterator chbegin, Geometry::Geometries::iterator chend, Geometry::Attributes attr);
+shared_ptr<CGALHybridPolyhedron> applyOperator3DHybrid(const Geometry::Geometries& children, OpenSCADOperator op, Geometry::Attributes attr);
 shared_ptr<CGALHybridPolyhedron> applyUnion3DHybrid(
   const Geometry::Geometries::const_iterator& chbegin,
-  const Geometry::Geometries::const_iterator& chend);
+  const Geometry::Geometries::const_iterator& chend,
+  Geometry::Attributes attr);
 //FIXME: Old, can be removed:
 //void applyBinaryOperator(CGAL_Nef_polyhedron &target, const CGAL_Nef_polyhedron &src, OpenSCADOperator op);
 Polygon2d *project(const CGAL_Nef_polyhedron& N, bool cut);
@@ -50,8 +51,8 @@ template <typename K>
 CGAL::Iso_cuboid_3<K> boundingBox(const CGAL::Surface_mesh<CGAL::Point_3<K>>& mesh);
 CGAL_Iso_cuboid_3 createIsoCuboidFromBoundingBox(const BoundingBox& bbox);
 bool is_approximately_convex(const PolySet& ps);
-shared_ptr<const Geometry> applyMinkowski(const Geometry::Geometries& children);
-shared_ptr<const Geometry> applyMinkowskiHybrid(const Geometry::Geometries& children);
+shared_ptr<const Geometry> applyMinkowski(const Geometry::Geometries& children, Geometry::Attributes attr);
+shared_ptr<const Geometry> applyMinkowskiHybrid(const Geometry::Geometries& children, Geometry::Attributes attr);
 
 template <typename Polyhedron> bool createPolySetFromPolyhedron(const Polyhedron& p, PolySet& ps);
 template <class InputKernel, class OutputKernel>
@@ -109,7 +110,7 @@ shared_ptr<CGAL_Nef_polyhedron> createNefPolyhedronFromHybrid(const CGALHybridPo
 std::shared_ptr<CGALHybridPolyhedron> createMutableHybridPolyhedronFromGeometry(const std::shared_ptr<const Geometry>& geom);
 std::shared_ptr<const CGALHybridPolyhedron> getHybridPolyhedronFromGeometry(const std::shared_ptr<const Geometry>& geom);
 template <typename K>
-std::shared_ptr<CGALHybridPolyhedron> createHybridPolyhedronFromPolyhedron(const CGAL::Polyhedron_3<K>& poly);
+std::shared_ptr<CGALHybridPolyhedron> createHybridPolyhedronFromPolyhedron(const CGAL::Polyhedron_3<K>& poly, Geometry::Attributes attr);
 template <typename Polyhedron>
 void triangulateFaces(Polyhedron& polyhedron);
 template <typename Polyhedron>

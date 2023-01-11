@@ -19,7 +19,7 @@ std::shared_ptr<CGAL_Nef_polyhedron> createNefPolyhedronFromHybrid(
   const CGALHybridPolyhedron& hybrid);
 
 std::shared_ptr<const Geometry> applyMinkowskiHybrid(
-  const Geometry::Geometries& children);
+  const Geometry::Geometries& children, Geometry::Attributes attr);
 } // namespace CGALUtils
 
 /*! A mutable polyhedron backed by a CGAL::Surface_mesh and fast Polygon Mesh
@@ -92,7 +92,7 @@ private:
     const CGALHybridPolyhedron& hybrid);
 
   friend std::shared_ptr<const Geometry> CGALUtils::applyMinkowskiHybrid(
-    const Geometry::Geometries& children);
+    const Geometry::Geometries& children, Geometry::Attributes attr);
 
   /*! Runs a binary operation that operates on nef polyhedra, stores the result in
    * the first one and potentially mutates (e.g. corefines) the second. */

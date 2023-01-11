@@ -67,7 +67,7 @@ public:
 
   std::string derivedMaterialName = "";
   std::string derivedPartName = "";
-  Color4f derivedColor;
+  Color4f derivedColor = {-1.0f, -1.0f, -1.0f, 1.0f};
 
   Geometry::Attributes getGeometryAttributes() const {
     return {.materialName = derivedMaterialName, .partName = derivedPartName, .color = derivedColor, .metadataCollected = true};

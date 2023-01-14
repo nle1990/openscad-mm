@@ -94,7 +94,7 @@ void CGALRenderer::createPolyhedrons()
 
   if (!Feature::ExperimentalVxORenderers.is_enabled()) {
     for (const auto& N : this->nefPolyhedrons) {
-      auto p = new CGAL_OGL_Polyhedron(*this->colorscheme);
+      auto p = new CGAL_OGL_Polyhedron(*this->colorscheme, N->attributes.color);
       CGAL::OGL::Nef3_Converter<CGAL_Nef_polyhedron3>::convert_to_OGLPolyhedron(*N->p3, p);
       // CGAL_NEF3_MARKED_FACET_COLOR <- CGAL_FACE_BACK_COLOR
       // CGAL_NEF3_UNMARKED_FACET_COLOR <- CGAL_FACE_FRONT_COLOR
@@ -103,7 +103,7 @@ void CGALRenderer::createPolyhedrons()
     }
   } else {
     for (const auto& N : this->nefPolyhedrons) {
-      auto p = new CGAL_OGL_VBOPolyhedron(*this->colorscheme);
+      auto p = new CGAL_OGL_VBOPolyhedron(*this->colorscheme, N->attributes.color);
       CGAL::OGL::Nef3_Converter<CGAL_Nef_polyhedron3>::convert_to_OGLPolyhedron(*N->p3, p);
       // CGAL_NEF3_MARKED_FACET_COLOR <- CGAL_FACE_BACK_COLOR
       // CGAL_NEF3_UNMARKED_FACET_COLOR <- CGAL_FACE_FRONT_COLOR
@@ -188,7 +188,17 @@ void CGALRenderer::createPolySets()
       polyset_states.emplace_back(std::move(init_state));
 
       // Create 2D polygons
-      getColor(ColorMode::CGAL_FACE_2D_COLOR, color);
+      //FIXME-MM: is this right??? is anything right?????
+      //if(polyset->attributes.color == Color4f{-1.0f, -1.0f, -1.0f, 1.0f})
+      {
+        LOG(message_group::None, Location::NONE, "", "leaving polyset 2d face color intact");
+        getColor(ColorMode::CGAL_FACE_2D_COLOR, color);
+      }/*
+      else
+      {
+        LOG(message_group::None, Location::NONE, "", "overwriting polyset 2d face color");
+        color = polyset->attributes.color;
+      }*/
       this->create_polygons(*polyset, vertex_array, CSGMODE_NONE, Transform3d::Identity(), color);
 
       std::shared_ptr<VertexState> edge_state = std::make_shared<VertexState>();
@@ -204,6 +214,7 @@ void CGALRenderer::createPolySets()
 
       // Create 2D edges
       getColor(ColorMode::CGAL_EDGE_2D_COLOR, color);
+      //FIXME-MM: should edge color be changed?
       this->create_edges(*polyset, vertex_array, CSGMODE_NONE, Transform3d::Identity(), color);
 
       std::shared_ptr<VertexState> end_state = std::make_shared<VertexState>();
@@ -218,6 +229,17 @@ void CGALRenderer::createPolySets()
 
       // Create 3D polygons
       getColor(ColorMode::MATERIAL, color);
+      //FIXME-MM: is this right??? is anything right?????
+      //if(polyset->attributes.color == Color4f{-1.0f, -1.0f, -1.0f, 1.0f})
+      {
+        LOG(message_group::None, Location::NONE, "", "leaving polyset 2d material color intact");
+        getColor(ColorMode::CGAL_FACE_2D_COLOR, color);
+      }
+      /*else
+      {
+        LOG(message_group::None, Location::NONE, "", "overwriting polyset 2d material color");
+        color = polyset->attributes.color;
+      }*/
       this->create_surface(*polyset, vertex_array, CSGMODE_NORMAL, Transform3d::Identity(), color);
     }
   }
@@ -258,7 +280,7 @@ void CGALRenderer::draw(bool showfaces, bool showedges, const shaderinfo_t * /*s
       if (polyset->getDimension() == 2) {
         // Draw 2D polygons
         glDisable(GL_LIGHTING);
-        setColor(ColorMode::CGAL_FACE_2D_COLOR);
+        setColor(ColorMode::CGAL_FACE_2D_COLOR); //FIXME-MM: does this need to be changed?
 
         for (const auto& polygon : polyset->polygons) {
           glBegin(GL_POLYGON);
@@ -272,12 +294,12 @@ void CGALRenderer::draw(bool showfaces, bool showedges, const shaderinfo_t * /*s
         glDisable(GL_DEPTH_TEST);
 
         glLineWidth(2);
-        setColor(ColorMode::CGAL_EDGE_2D_COLOR);
+        setColor(ColorMode::CGAL_EDGE_2D_COLOR); //FIXME-MM: does this need to be changed?
         this->render_edges(*polyset, CSGMODE_NONE);
         glEnable(GL_DEPTH_TEST);
       } else {
         // Draw 3D polygons
-        setColor(ColorMode::MATERIAL);
+        setColor(ColorMode::MATERIAL); //FIXME-MM: does this need to be changed?
         this->render_surface(*polyset, CSGMODE_NORMAL, Transform3d::Identity(), nullptr);
       }
     }

@@ -37,6 +37,7 @@ ThrownTogetherRenderer::ThrownTogetherRenderer(shared_ptr<CSGProducts> root_prod
   : root_products(root_products), highlight_products(highlight_products), background_products(background_products),
   vertices_vbo(0), elements_vbo(0)
 {
+  LOG(message_group::None, Location::NONE, "", "ThrownTogetherRenderer constructed");
 }
 
 ThrownTogetherRenderer::~ThrownTogetherRenderer()

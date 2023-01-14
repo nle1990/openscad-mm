@@ -13,6 +13,7 @@
 
 Renderer::Renderer() : colorscheme(nullptr)
 {
+  LOG(message_group::None, Location::NONE, "", "Renderer constructed");
   PRINTD("Renderer() start");
 
   renderer_shader.progid = 0;

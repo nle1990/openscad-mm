@@ -79,6 +79,7 @@ OpenCSGRenderer::OpenCSGRenderer(std::shared_ptr<CSGProducts> root_products,
   highlights_products(highlights_products),
   background_products(background_products)
 {
+  LOG(message_group::None, Location::NONE, "", "OpenCSGRenderer constructed");
 }
 
 void OpenCSGRenderer::prepare(bool /*showfaces*/, bool showedges, const shaderinfo_t *shaderinfo)

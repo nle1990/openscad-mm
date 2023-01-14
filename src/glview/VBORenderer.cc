@@ -37,6 +37,7 @@
 VBORenderer::VBORenderer()
   : Renderer(), shader_attributes_index(0)
 {
+  LOG(message_group::None, Location::NONE, "", "VBORenderer constructed");
 }
 
 void VBORenderer::resize(int w, int h)

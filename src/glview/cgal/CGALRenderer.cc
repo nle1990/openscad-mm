@@ -44,6 +44,7 @@ CGALRenderer::CGALRenderer(shared_ptr<const class Geometry> geom)
   : last_render_state(Feature::ExperimentalVxORenderers.is_enabled()), // FIXME: this is temporary to make switching between renderers seamless.
   polyset_vertices_vbo(0), polyset_elements_vbo(0)
 {
+  LOG(message_group::None, Location::NONE, "", "CGALRenderer constructed");
   this->addGeometry(geom);
 }
 
@@ -116,6 +117,7 @@ void CGALRenderer::createPolyhedrons()
 // Overridden from Renderer
 void CGALRenderer::setColorScheme(const ColorScheme& cs)
 {
+  LOG(message_group::None, Location::NONE, "", "setColorScheme");
   PRINTD("setColorScheme");
   Renderer::setColorScheme(cs);
   colormap[ColorMode::CGAL_FACE_2D_COLOR] = ColorMap::getColor(cs, RenderColor::CGAL_FACE_2D_COLOR);

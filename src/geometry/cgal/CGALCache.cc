@@ -11,6 +11,7 @@ CGALCache::CGALCache(size_t limit) : cache(limit)
 
 shared_ptr<const Geometry> CGALCache::get(const std::string& id) const
 {
+  return nullptr; //FIXME-MM: reenable, but taking into account attributes
   const auto& N = this->cache[id]->N;
 #ifdef DEBUG
   LOG(message_group::None, Location::NONE, "", "CGAL Cache hit: %1$s (%2$d bytes)", id.substr(0, 40), N ? N->memsize() : 0);

@@ -229,16 +229,16 @@ void CGALRenderer::createPolySets()
 
       // Create 3D polygons
       //FIXME-MM: is this right??? is anything right?????
-      //if(polyset->attributes.color == Color4f{-1.0f, -1.0f, -1.0f, 1.0f})
+      if(polyset->attributes.color == Color4f{-1.0f, -1.0f, -1.0f, 1.0f})
       {
         LOG(message_group::None, Location::NONE, "", "leaving polyset 3d material color intact");
         getColor(ColorMode::MATERIAL, color);
       }
-      /*else
+      else
       {
         LOG(message_group::None, Location::NONE, "", "overwriting polyset 3d material color");
         color = polyset->attributes.color;
-      }*/
+      }
       this->create_surface(*polyset, vertex_array, CSGMODE_NORMAL, Transform3d::Identity(), color);
     }
   }

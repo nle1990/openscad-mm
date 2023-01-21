@@ -188,17 +188,16 @@ void CGALRenderer::createPolySets()
       polyset_states.emplace_back(std::move(init_state));
 
       // Create 2D polygons
-      //FIXME-MM: is this right??? is anything right?????
-      //if(polyset->attributes.color == Color4f{-1.0f, -1.0f, -1.0f, 1.0f})
+      if(polyset->attributes.color == Color4f{-1.0f, -1.0f, -1.0f, 1.0f})
       {
         LOG(message_group::None, Location::NONE, "", "leaving polyset 2d face color intact");
         getColor(ColorMode::CGAL_FACE_2D_COLOR, color);
-      }/*
+      }
       else
       {
         LOG(message_group::None, Location::NONE, "", "overwriting polyset 2d face color");
         color = polyset->attributes.color;
-      }*/
+      }
       this->create_polygons(*polyset, vertex_array, CSGMODE_NONE, Transform3d::Identity(), color);
 
       std::shared_ptr<VertexState> edge_state = std::make_shared<VertexState>();
@@ -214,7 +213,6 @@ void CGALRenderer::createPolySets()
 
       // Create 2D edges
       getColor(ColorMode::CGAL_EDGE_2D_COLOR, color);
-      //FIXME-MM: should edge color be changed?
       this->create_edges(*polyset, vertex_array, CSGMODE_NONE, Transform3d::Identity(), color);
 
       std::shared_ptr<VertexState> end_state = std::make_shared<VertexState>();
@@ -228,7 +226,6 @@ void CGALRenderer::createPolySets()
       vertex_array.writeSurface();
 
       // Create 3D polygons
-      //FIXME-MM: is this right??? is anything right?????
       if(polyset->attributes.color == Color4f{-1.0f, -1.0f, -1.0f, 1.0f})
       {
         LOG(message_group::None, Location::NONE, "", "leaving polyset 3d material color intact");

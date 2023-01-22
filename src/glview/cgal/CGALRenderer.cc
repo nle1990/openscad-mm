@@ -276,7 +276,16 @@ void CGALRenderer::draw(bool showfaces, bool showedges, const shaderinfo_t * /*s
       if (polyset->getDimension() == 2) {
         // Draw 2D polygons
         glDisable(GL_LIGHTING);
-        setColor(ColorMode::CGAL_FACE_2D_COLOR); //FIXME-MM: does this need to be changed?
+
+        if(polyset->attributes.color == Color4f{-1.0f, -1.0f, -1.0f, 1.0f})
+        {
+          setColor(ColorMode::CGAL_FACE_2D_COLOR);
+        }
+        else
+        {
+          float color[4] = {polyset->attributes.color[0], polyset->attributes.color[1], polyset->attributes.color[2], polyset->attributes.color[3]};
+          setColor(color);
+        }
 
         for (const auto& polygon : polyset->polygons) {
           glBegin(GL_POLYGON);
@@ -290,7 +299,7 @@ void CGALRenderer::draw(bool showfaces, bool showedges, const shaderinfo_t * /*s
         glDisable(GL_DEPTH_TEST);
 
         glLineWidth(2);
-        setColor(ColorMode::CGAL_EDGE_2D_COLOR); //FIXME-MM: does this need to be changed?
+        setColor(ColorMode::CGAL_EDGE_2D_COLOR);
         this->render_edges(*polyset, CSGMODE_NONE);
         glEnable(GL_DEPTH_TEST);
       } else {

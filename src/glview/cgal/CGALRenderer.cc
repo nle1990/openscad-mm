@@ -117,7 +117,6 @@ void CGALRenderer::createPolyhedrons()
 // Overridden from Renderer
 void CGALRenderer::setColorScheme(const ColorScheme& cs)
 {
-  LOG(message_group::None, Location::NONE, "", "setColorScheme");
   PRINTD("setColorScheme");
   Renderer::setColorScheme(cs);
   colormap[ColorMode::CGAL_FACE_2D_COLOR] = ColorMap::getColor(cs, RenderColor::CGAL_FACE_2D_COLOR);
@@ -190,12 +189,10 @@ void CGALRenderer::createPolySets()
       // Create 2D polygons
       if(polyset->attributes.color == Color4f{-1.0f, -1.0f, -1.0f, 1.0f})
       {
-        LOG(message_group::None, Location::NONE, "", "leaving polyset 2d face color intact");
         getColor(ColorMode::CGAL_FACE_2D_COLOR, color);
       }
       else
       {
-        LOG(message_group::None, Location::NONE, "", "overwriting polyset 2d face color");
         color = polyset->attributes.color;
       }
       this->create_polygons(*polyset, vertex_array, CSGMODE_NONE, Transform3d::Identity(), color);
@@ -228,12 +225,10 @@ void CGALRenderer::createPolySets()
       // Create 3D polygons
       if(polyset->attributes.color == Color4f{-1.0f, -1.0f, -1.0f, 1.0f})
       {
-        LOG(message_group::None, Location::NONE, "", "leaving polyset 3d material color intact");
         getColor(ColorMode::MATERIAL, color);
       }
       else
       {
-        LOG(message_group::None, Location::NONE, "", "overwriting polyset 3d material color");
         color = polyset->attributes.color;
       }
       this->create_surface(*polyset, vertex_array, CSGMODE_NORMAL, Transform3d::Identity(), color);
@@ -306,12 +301,10 @@ void CGALRenderer::draw(bool showfaces, bool showedges, const shaderinfo_t * /*s
         // Draw 3D polygons
         if(polyset->attributes.color == Color4f{-1.0f, -1.0f, -1.0f, 1.0f})
         {
-          LOG(message_group::None, Location::NONE, "", "leaving polyset 3d material color intact (b)");
           setColor(ColorMode::MATERIAL);
         }
         else
         {
-          LOG(message_group::None, Location::NONE, "", "overwriting polyset 3d material color (b)");
           float color[4] = {polyset->attributes.color[0], polyset->attributes.color[1], polyset->attributes.color[2], polyset->attributes.color[3]};
           setColor(color);
         }

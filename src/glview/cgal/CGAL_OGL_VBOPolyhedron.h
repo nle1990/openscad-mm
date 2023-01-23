@@ -39,7 +39,6 @@ public:
 
   CGAL_OGL_VBOPolyhedron(const ColorScheme& cs, Color4f overrideColor = {-1.0f, -1.0f, -1.0f, 1.0f}) //FIXME-MM: overrideColor is not being used
     : VBOPolyhedron(), CGAL_OGL_Polyhedron(cs, overrideColor) {
-    LOG(message_group::None, Location::NONE, "", "CGAL_OGL_VBOPolyhedron constructed");
     PRINTD("CGAL_OGL_VBOPolyhedron()");
     PRINTD("CGAL_OGL_VBOPolyhedron() end");
   }

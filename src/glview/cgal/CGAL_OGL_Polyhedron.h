@@ -50,7 +50,6 @@ public:
   };
 
   CGAL_OGL_Polyhedron(const ColorScheme& cs, Color4f overrideColor = {-1.0f, -1.0f, -1.0f, 1.0f}) {
-    LOG(message_group::None, Location::NONE, "", "CGAL_OGL_Polyhedron constructed");
     PRINTD("CGAL_OGL_Polyhedron()");
     // Set default colors.
     setColor(CGALColorIndex::MARKED_VERTEX_COLOR, 0xb7, 0xe8, 0x5c);
@@ -61,14 +60,9 @@ public:
 
     if(overrideColor != Color4f{-1.0f, -1.0f, -1.0f, 1.0f})
     {
-      LOG(message_group::None, Location::NONE, "", "overriding CGAL_OGL_Polyhedron color (%1$f, %2$f, %3$f, %4$f)", overrideColor[0], overrideColor[1], overrideColor[2], overrideColor[3]);
       //FIXME-MM: maybe look at the OpenCSGRenderer and its color modes to figure out how to do this more properly?
       setColor(CGALColorIndex::UNMARKED_FACET_COLOR, overrideColor);
       setColor(CGALColorIndex::MARKED_FACET_COLOR, overrideColor); //I think this needs transparency
-    }
-    else
-    {
-      LOG(message_group::None, Location::NONE, "", "NOT overriding CGAL_OGL_Polyhedron color");
     }
 
     PRINTD("CGAL_OGL_Polyhedron() end");

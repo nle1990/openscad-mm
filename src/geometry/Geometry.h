@@ -16,6 +16,18 @@ public:
   typedef std::pair<std::shared_ptr<const AbstractNode>, shared_ptr<const Geometry>> GeometryItem;
   typedef std::list<GeometryItem> Geometries;
 
+  struct Attributes {
+    std::string materialName = "";
+    std::string partName = "";
+    Color4f color = {-1.0f, -1.0f, -1.0f, 1.0f};
+    bool metadataCollected = false;
+  };
+
+  struct IrreconcilableAttributes {
+    std::string materialName = "";
+    std::string partName = "";
+  };
+
   Geometry() : convexity(1) {}
   virtual ~Geometry() {}
 
@@ -36,14 +48,12 @@ public:
   virtual void accept(class GeometryVisitor& visitor) const = 0;
   virtual std::string toString() const { return "This Geometry type does not implement toString()!"; }
 
-  struct Attributes {
-    std::string materialName = "";
-    std::string partName = "";
-    Color4f color = {-1.0f, -1.0f, -1.0f, 1.0f};
-    bool metadataCollected = false;
-  };
 
   Attributes attributes;
+
+  Geometry::IrreconcilableAttributes getIrreconcilableAttributes() const {
+    return {.materialName = attributes.materialName, .partName = attributes.partName};
+  }
 
 protected:
   int convexity;

@@ -73,6 +73,10 @@ public:
     return {.materialName = derivedMaterialName, .partName = derivedPartName, .color = derivedColor, .metadataCollected = true};
   }
 
+  Geometry::IrreconcilableAttributes getIrreconcilableGeometryAttributes() const {
+    return {.materialName = derivedMaterialName, .partName = derivedPartName};
+  }
+
   std::shared_ptr<const AbstractNode> getNodeByID(int idx, std::deque<std::shared_ptr<const AbstractNode> >& path) const;
 };
 

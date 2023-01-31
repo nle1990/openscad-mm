@@ -73,6 +73,7 @@ private:
   bool isValidDim(const Geometry::GeometryItem& item, unsigned int& dim) const;
   std::vector<const class Polygon2d *> collectChildren2D(const AbstractNode& node);
   Geometry::Geometries collectChildren3D(const AbstractNode& node);
+  std::map<Geometry::IrreconcilableAttributes, Geometry::Geometries> collectReconcilableChildGroups3D(const AbstractNode& node);
   Polygon2d *applyMinkowski2D(const AbstractNode& node);
   Polygon2d *applyHull2D(const AbstractNode& node);
   Polygon2d *applyFill2D(const AbstractNode& node);

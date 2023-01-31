@@ -26,6 +26,14 @@ public:
   struct IrreconcilableAttributes {
     std::string materialName = "";
     std::string partName = "";
+
+    bool operator==(const Geometry::IrreconcilableAttributes &o) const {
+        return materialName == o.materialName && partName == o.partName;
+    }
+
+    bool operator<(const Geometry::IrreconcilableAttributes &o)  const {
+        return materialName < o.materialName || (materialName == o.materialName && partName < o.partName);
+    }
   };
 
   Geometry() : convexity(1) {}

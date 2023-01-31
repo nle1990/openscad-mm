@@ -135,21 +135,33 @@ GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren(const Abstrac
  */
 GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren3D(const AbstractNode& node, OpenSCADOperator op)
 {
-  Geometry::Geometries children = collectChildren3D(node);
+  Geometry::Geometries children = collectChildren3D(node); //FIXME-MM TODO kill once everything is translated
+  auto childGroups = collectReconcilableChildGroups3D(node);
   if (children.size() == 0) return ResultObject();
 
   //FIXME-MM: I actually think this would need to be the first child, or various special cases, or what have you. as it stands, this is not correct
   Geometry::Attributes resultAttributes = node.getGeometryAttributes();
-
   if (op == OpenSCADOperator::HULL) {
-    PolySet *ps = new PolySet(3, resultAttributes, /* convex */ true);
+    Geometry::Geometries geometries;
+    for (const auto& children : childGroups)
+    {
+      Geometry::Attributes firstChildAttributes = children.second.front().first->getGeometryAttributes();
+      PolySet *ps = new PolySet(3, firstChildAttributes, /* convex */ true);
 
-    if (CGALUtils::applyHull(children, *ps, resultAttributes)) {//FIXME-MM: resultAttributes
-      return ps;
+      if (CGALUtils::applyHull(children.second, *ps, firstChildAttributes)) {//FIXME-MM: resultAttributes
+        geometries.push_back(std::make_pair(std::shared_ptr<AbstractNode>(), std::shared_ptr<PolySet>(ps)));
+      }
+      else
+      {
+        delete ps;
+      }
     }
 
-    delete ps;
-    return ResultObject();
+    if(geometries.size() > 1)
+    {
+      return ResultObject(new GeometryList(geometries));
+    }
+    return ResultObject(geometries.front().second);
   }
   else if (op == OpenSCADOperator::FILL) {
     for (const auto& item : children) {
@@ -386,6 +398,38 @@ Geometry::Geometries GeometryEvaluator::collectChildren3D(const AbstractNode& no
     }
   }
   return children;
+}
+
+
+/*!
+   Returns a list of 3D Geometry children with compatible attributes of the given node.
+   May return empty geometries, but not nullptr objects
+ */
+std::map<Geometry::IrreconcilableAttributes, Geometry::Geometries> GeometryEvaluator::collectReconcilableChildGroups3D(const AbstractNode& node)
+{
+  std::map<Geometry::IrreconcilableAttributes, Geometry::Geometries> childgroups;
+  for (const auto& item : this->visitedchildren[node.index()]) {
+    auto &chnode = item.first;
+    const shared_ptr<const Geometry>& chgeom = item.second;
+    if (chnode->modinst->isBackground()) continue;
+
+    // NB! We insert into the cache here to ensure that all children of
+    // a node is a valid object. If we inserted as we created them, the
+    // cache could have been modified before we reach this point due to a large
+    // sibling object.
+    smartCacheInsert(*chnode, chgeom);
+
+    Geometry::IrreconcilableAttributes group = item.first->getIrreconcilableGeometryAttributes();
+
+    if (chgeom && chgeom->getDimension() == 2) {
+      LOG(message_group::Warning, item.first->modinst->location(), this->tree.getDocumentPath(), "Ignoring 2D child object for 3D operation");
+      childgroups[group].push_back(std::make_pair(item.first, nullptr)); // replace 2D geometry with empty geometry
+    } else {
+      // Add children if geometry is 3D OR null/empty
+      childgroups[group].push_back(item);
+    }
+  }
+  return childgroups;
 }
 /*!
 

@@ -94,7 +94,8 @@ std::string GeometryList::toString() const
   bool start = true;
   for (const auto& item : this->children) {
     if(!start) os << ",\n";
-    os << "    " << item.second->toString() << "\n      (" << item.first->toString() << ")";
+    os << "    " << item.second->toString() << "\n";
+    if(item.first) os << "      (" << item.first->toString() << ")";
     start = false;
   }
   os << ">";

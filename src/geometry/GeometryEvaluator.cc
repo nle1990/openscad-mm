@@ -161,7 +161,14 @@ GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren3D(const Abstr
     {
       return ResultObject(new GeometryList(geometries));
     }
-    return ResultObject(geometries.front().second);
+    else if(geometries.size() == 1)
+    {
+      return ResultObject(geometries.front().second);
+    }
+    else
+    {
+      return ResultObject();
+    }
   }
   else if (op == OpenSCADOperator::FILL) {
     for (const auto& item : children) {

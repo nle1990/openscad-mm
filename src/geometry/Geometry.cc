@@ -1,4 +1,8 @@
 #include "Geometry.h"
+#include "CGAL_Nef_polyhedron.h"
+#include "PolySet.h"
+#include "CGALHybridPolyhedron.h"
+#include "Polygon2d.h"
 #include "printutils.h"
 #include "node.h"
 #include <boost/foreach.hpp>
@@ -62,6 +66,60 @@ bool GeometryList::isEmpty() const
     if (!item.second->isEmpty()) return false;
   }
   return true;
+}
+
+void GeometryList::transform(const Transform3d& matrix)
+{
+  if (this->isEmpty()) return;
+  LOG(message_group::Warning, Location::NONE, "", "GeometryList transform"); //FIXME-MM: make sure this works as expected
+
+  for (auto& item : this->children)
+  {
+    if(!item.second) continue;
+    Geometry* geom;
+
+    if (const auto geomlist = dynamic_pointer_cast<const GeometryList>(item.second)) {
+      geom = new GeometryList(*geomlist.get());
+    } else if (const auto ps = dynamic_pointer_cast<const PolySet>(item.second)) {
+      geom = new PolySet(*ps.get());
+    } else if (const auto poly = dynamic_pointer_cast<const Polygon2d>(item.second)) {
+      geom = new Polygon2d(*poly.get());
+    } else if (const auto new_N = dynamic_pointer_cast<const CGAL_Nef_polyhedron>(item.second)) {
+      geom = new CGAL_Nef_polyhedron(*new_N.get());
+    } else if (const auto hybrid = dynamic_pointer_cast<const CGALHybridPolyhedron>(item.second)) {
+      geom = new CGALHybridPolyhedron(*hybrid.get());
+    }
+    geom->transform(matrix);
+    item.second.reset(geom);
+  }
+}
+
+void GeometryList::resize(const Vector3d& newsize,
+                                 const Eigen::Matrix<bool, 3, 1>& autosize)
+{
+  if (this->isEmpty()) return;
+  LOG(message_group::Warning, Location::NONE, "", "GeometryList resize"); //FIXME-MM: make sure this works as expected
+
+
+  for (auto& item : this->children)
+  {
+    if(!item.second) continue;
+    Geometry* geom;
+
+    if (const auto geomlist = dynamic_pointer_cast<const GeometryList>(item.second)) {
+      geom = new GeometryList(*geomlist.get());
+    } else if (const auto ps = dynamic_pointer_cast<const PolySet>(item.second)) {
+      geom = new PolySet(*ps.get());
+    } else if (const auto poly = dynamic_pointer_cast<const Polygon2d>(item.second)) {
+      geom = new Polygon2d(*poly.get());
+    } else if (const auto new_N = dynamic_pointer_cast<const CGAL_Nef_polyhedron>(item.second)) {
+      geom = new CGAL_Nef_polyhedron(*new_N.get());
+    } else if (const auto hybrid = dynamic_pointer_cast<const CGALHybridPolyhedron>(item.second)) {
+      geom = new CGALHybridPolyhedron(*hybrid.get());
+    }
+    geom->resize(newsize, autosize);
+    item.second.reset(geom);
+  }
 }
 
 void flatten(const GeometryList& geomlist, GeometryList::Geometries& childlist)

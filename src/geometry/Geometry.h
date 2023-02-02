@@ -105,6 +105,8 @@ public:
   bool isEmpty() const override;
   Geometry *copy() const override { return new GeometryList(*this); }
   size_t numFacets() const override { assert(false && "not implemented"); return 0; }
+  virtual void transform(const Transform3d& matrix) override;
+  virtual void resize(const Vector3d& newsize, const Eigen::Matrix<bool, 3, 1>& autosize) override;
 
   const Geometries& getChildren() const {
     return this->children;

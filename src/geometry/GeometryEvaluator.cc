@@ -145,10 +145,22 @@ GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren3D(const Abstr
     Geometry::Geometries geometries;
     for (const auto& children : childGroups)
     {
-      Geometry::Attributes firstChildAttributes = children.second.front().first->getGeometryAttributes();
+      Geometry::Attributes firstChildAttributes;
+      Geometry::GeometryItem firstChild = children.second.front();
+      // we might have a node with no geometry (e.g. for 2d geometries), or
+      // a geometry with no node (e.g. a child of a GeometryList from a previous hull operation), but never neither
+      if(firstChild.first)
+      {
+        firstChildAttributes = firstChild.first->getGeometryAttributes();
+      }
+      else
+      {
+        firstChildAttributes = firstChild.second->attributes;
+      }
+
       PolySet *ps = new PolySet(3, firstChildAttributes, /* convex */ true);
 
-      if (CGALUtils::applyHull(children.second, *ps, firstChildAttributes)) {//FIXME-MM: resultAttributes
+      if (CGALUtils::applyHull(children.second, *ps, firstChildAttributes)) {
         geometries.push_back(std::make_pair(std::shared_ptr<AbstractNode>(), std::shared_ptr<PolySet>(ps)));
       }
       else
@@ -426,15 +438,38 @@ std::map<Geometry::IrreconcilableAttributes, Geometry::Geometries> GeometryEvalu
     // sibling object.
     smartCacheInsert(*chnode, chgeom);
 
-    Geometry::IrreconcilableAttributes group = item.first->getIrreconcilableGeometryAttributes();
 
-    if (chgeom && chgeom->getDimension() == 2) {
-      LOG(message_group::Warning, item.first->modinst->location(), this->tree.getDocumentPath(), "Ignoring 2D child object for 3D operation");
-      childgroups[group].push_back(std::make_pair(item.first, nullptr)); // replace 2D geometry with empty geometry
-    } else {
-      // Add children if geometry is 3D OR null/empty
-      childgroups[group].push_back(item);
+    auto sortGeometry = [&](const Geometry::GeometryItem &item) {
+      Geometry::IrreconcilableAttributes group;
+      if(item.first)
+      {
+        group = item.first->getIrreconcilableGeometryAttributes();
+      }
+      else
+      {
+        group = item.second->getIrreconcilableAttributes();
+      }
+
+      if (chgeom && chgeom->getDimension() == 2) {
+        LOG(message_group::Warning, item.first->modinst->location(), this->tree.getDocumentPath(), "Ignoring 2D child object for 3D operation");
+        childgroups[group].push_back(std::make_pair(item.first, nullptr)); // replace 2D geometry with empty geometry
+      } else {
+        // Add children if geometry is 3D OR null/empty
+        childgroups[group].push_back(item);
+      }
+
+    };
+
+    if (auto geolist = dynamic_pointer_cast<const GeometryList>(chgeom)) {
+      Geometry::Geometries geometries = geolist->flatten();
+      for(const auto& subitem : geometries)
+      {
+        sortGeometry(subitem);
+      }
+      continue;
     }
+
+    sortGeometry(item);
   }
   return childgroups;
 }

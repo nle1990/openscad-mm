@@ -205,16 +205,15 @@ bool applyHull(const Geometry::Geometries& children, PolySet& result, Geometry::
           addPoint(vector_convert<K::Point_3>(p));
           return false;
         });
-    } else {
-      const PolySet *ps = dynamic_cast<const PolySet *>(chgeom.get());
-      if (ps) {
-        points.reserve(points.size() + ps->polygons.size() * 3);
-        for (const auto& p : ps->polygons) {
-          for (const auto& v : p) {
-            addPoint(vector_convert<K::Point_3>(v));
-          }
+    } else if(const PolySet *ps = dynamic_cast<const PolySet *>(chgeom.get())) {
+      points.reserve(points.size() + ps->polygons.size() * 3);
+      for (const auto& p : ps->polygons) {
+        for (const auto& v : p) {
+          addPoint(vector_convert<K::Point_3>(v));
         }
       }
+    } else if(auto geomlist = dynamic_pointer_cast<const GeometryList>(chgeom)) {
+      LOG(message_group::Error, Location::NONE, "", "passed GeometryList to applyHull");
     }
   }
 

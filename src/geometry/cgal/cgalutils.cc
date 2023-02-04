@@ -248,6 +248,8 @@ shared_ptr<const CGAL_Nef_polyhedron> getNefPolyhedronFromGeometry(const shared_
     return shared_ptr<CGAL_Nef_polyhedron>(createNefPolyhedronFromPolygon2d(*poly2d));
   } else if (auto nef = dynamic_pointer_cast<const CGAL_Nef_polyhedron>(geom)) {
     return nef;
+  } else if (auto geomlist = dynamic_pointer_cast<const GeometryList>(geom)) {
+    LOG(message_group::Error, Location::NONE, "", "Called getNefPolyhedronFromGeometry on GeometryList");
   }
   return nullptr;
 }

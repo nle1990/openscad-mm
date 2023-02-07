@@ -135,32 +135,29 @@ GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren(const Abstrac
  */
 GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren3D(const AbstractNode& node, OpenSCADOperator op)
 {
-  Geometry::Geometries children = collectChildren3D(node); //FIXME-MM TODO kill once everything is translated
   auto childGroups = collectReconcilableChildGroups3D(node);
-  if (children.size() == 0) return ResultObject();
+  if (childGroups.size() == 0) return ResultObject();
 
-  //FIXME-MM: I actually think this would need to be the first child, or various special cases, or what have you. as it stands, this is not correct
-  Geometry::Attributes resultAttributes = node.getGeometryAttributes();
   if (op == OpenSCADOperator::HULL) {
     Geometry::Geometries geometries;
     for (const auto& children : childGroups)
     {
-      Geometry::Attributes firstChildAttributes;
+      Geometry::Attributes resultAttributes;
       Geometry::GeometryItem firstChild = children.second.front();
       // we might have a node with no geometry (e.g. for 2d geometries), or
       // a geometry with no node (e.g. a child of a GeometryList from a previous hull operation), but never neither
       if(firstChild.first)
       {
-        firstChildAttributes = firstChild.first->getGeometryAttributes();
+        resultAttributes = firstChild.first->getGeometryAttributes();
       }
       else
       {
-        firstChildAttributes = firstChild.second->attributes;
+        resultAttributes = firstChild.second->attributes;
       }
 
-      PolySet *ps = new PolySet(3, firstChildAttributes, /* convex */ true);
+      PolySet *ps = new PolySet(3, resultAttributes, /* convex */ true);
 
-      if (CGALUtils::applyHull(children.second, *ps, firstChildAttributes)) {
+      if (CGALUtils::applyHull(children.second, *ps)) {
         geometries.push_back(std::make_pair(std::shared_ptr<AbstractNode>(), std::shared_ptr<PolySet>(ps)));
       }
       else
@@ -183,40 +180,96 @@ GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren3D(const Abstr
     }
   }
   else if (op == OpenSCADOperator::FILL) {
-    for (const auto& item : children) {
-      LOG(message_group::Warning, item.first->modinst->location(), this->tree.getDocumentPath(), "fill() not yet implemented for 3D");
+    for (const auto& children : childGroups)
+    {
+      for (const auto& item : children.second) {
+        LOG(message_group::Warning, item.first->modinst->location(), this->tree.getDocumentPath(), "fill() not yet implemented for 3D");
+      }
     }
   }
 
   // Only one child -> this is a noop
-  if (children.size() == 1) return ResultObject(children.front().second);
+  if (childGroups.size() == 1 && childGroups.begin()->second.size() == 1) return ResultObject(childGroups.begin()->second.front().second);
 
   switch (op) {
   case OpenSCADOperator::MINKOWSKI:
   {
-    Geometry::Geometries actualchildren;
-    for (const auto& item : children) {
-      if (item.second && !item.second->isEmpty()) actualchildren.push_back(item);
+    Geometry::Geometries geometries;
+    for (const auto& children : childGroups)
+    {
+      Geometry::Attributes resultAttributes;
+      Geometry::Geometries actualchildren;
+      for (const auto& item : children.second) {
+        if (item.second && !item.second->isEmpty()) actualchildren.push_back(item);
+        resultAttributes = item.second->attributes;
+      }
+      if (actualchildren.empty()) continue;
+      if (actualchildren.size() == 1) geometries.push_back(std::make_pair(std::shared_ptr<AbstractNode>(), actualchildren.front().second));
+      else geometries.push_back(std::make_pair(std::shared_ptr<AbstractNode>(), CGALUtils::applyMinkowski(actualchildren, resultAttributes)));
     }
-    if (actualchildren.empty()) return ResultObject();
-    if (actualchildren.size() == 1) return ResultObject(actualchildren.front().second);
-    return ResultObject(CGALUtils::applyMinkowski(actualchildren, resultAttributes)); //FIXME-MM: resultAttributes
+
+    if(geometries.size() > 1)
+    {
+      return ResultObject(new GeometryList(geometries));
+    }
+    else if(geometries.size() == 1)
+    {
+      return ResultObject(geometries.front().second);
+    }
+    else
+    {
+      return ResultObject();
+    }
     break;
   }
   case OpenSCADOperator::UNION:
   {
-    Geometry::Geometries actualchildren;
-    for (const auto& item : children) {
-      if (item.second && !item.second->isEmpty()) actualchildren.push_back(item);
+    Geometry::Geometries geometries;
+    for (const auto& children : childGroups)
+    {
+      Geometry::Attributes resultAttributes;
+      Geometry::Geometries actualchildren;
+      for (const auto& item : children.second) {
+        if (item.second && !item.second->isEmpty()) actualchildren.push_back(item);
+        resultAttributes = item.second->attributes;
+      }
+      if (actualchildren.empty()) continue;
+      if (actualchildren.size() == 1) geometries.push_back(std::make_pair(std::shared_ptr<AbstractNode>(), actualchildren.front().second));
+      else geometries.push_back(std::make_pair(std::shared_ptr<AbstractNode>(), CGALUtils::applyMinkowski(actualchildren, resultAttributes)));
     }
-    if (actualchildren.empty()) return ResultObject();
-    if (actualchildren.size() == 1) return ResultObject(actualchildren.front().second);
-    return ResultObject(CGALUtils::applyUnion3D(actualchildren.begin(), actualchildren.end(), resultAttributes));  //FIXME-MM: resultAttributes
+
+    if(geometries.size() > 1)
+    {
+      return ResultObject(new GeometryList(geometries));
+    }
+    else if(geometries.size() == 1)
+    {
+      return ResultObject(geometries.front().second);
+    }
+    else
+    {
+      return ResultObject();
+    }
     break;
   }
   default:
   {
-    return ResultObject(CGALUtils::applyOperator3D(children, op, resultAttributes));  //FIXME-MM: resultAttributes
+    Geometry::Geometries geometries;
+    for (const auto& children : childGroups)
+    {
+      Geometry::Attributes resultAttributes;
+      if(children.second.front().first)
+      {
+        resultAttributes = children.second.front().first->getGeometryAttributes();
+      }
+      else
+      {
+        resultAttributes = children.second.front().second->attributes;
+      }
+
+      geometries.push_back(std::make_pair(std::shared_ptr<AbstractNode>(), CGALUtils::applyOperator3D(children.second, op, resultAttributes)));
+    }
+    return ResultObject(new GeometryList(geometries));
     break;
   }
   }
@@ -295,7 +348,7 @@ Geometry *GeometryEvaluator::applyHull3D(const AbstractNode& node)
   //FIXME-MM: I actually think this would need to be the first child, or various special cases, or what have you. as it stands, this is not correct
   Geometry::Attributes resultAttributes = node.getGeometryAttributes();
   PolySet *P = new PolySet(3, resultAttributes);
-  if (CGALUtils::applyHull(children, *P, resultAttributes)) { //FIXME-MM: resultAttributes
+  if (CGALUtils::applyHull(children, *P)) { //FIXME-MM: resultAttributes
     return P;
   }
   delete P;

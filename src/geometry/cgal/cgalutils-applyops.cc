@@ -169,8 +169,7 @@ shared_ptr<const Geometry> applyUnion3D(
 
 
 
-bool applyHull(const Geometry::Geometries& children, PolySet& result, Geometry::Attributes attr) //FIXME-MM: possibly just check children for being the same and error out if they are not instead of second param here
-//Also, if you change this back, you need to also change the declaration in cgalutils.h
+bool applyHull(const Geometry::Geometries& children, PolySet& result)
 {
   //FIXME-MM: examine and possibly change source below
   LOG(message_group::None, Location::NONE, "", "applyHull called");

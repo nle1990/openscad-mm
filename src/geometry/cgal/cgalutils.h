@@ -30,7 +30,7 @@ Result vector_convert(V const& v) {
 
 namespace CGALUtils {
 
-bool applyHull(const Geometry::Geometries& children, PolySet& P, Geometry::Attributes attr);
+bool applyHull(const Geometry::Geometries& children, PolySet& P);
 template <typename K>
 bool is_weakly_convex(const CGAL::Polyhedron_3<K>& p);
 template <typename K>

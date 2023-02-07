@@ -116,6 +116,6 @@ void CGAL_Nef_polyhedron::transform(const Transform3d& matrix)
 
 std::string CGAL_Nef_polyhedron::toString() const
 {
-  return "CGAL_Nef_polyhedron (" + std::to_string(numFacets()) + " facets)";
+  return "CGAL_Nef_polyhedron (p: " + attributes.partName + " m: " + attributes.materialName + " c: " + attributes.color.toString() + ", " + std::to_string(numFacets()) + " facets)";
 }
 

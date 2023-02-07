@@ -461,5 +461,5 @@ bool CGALHybridPolyhedron::sharesAnyVertexWith(const CGALHybridPolyhedron& other
 
 std::string CGALHybridPolyhedron::toString() const
 {
-  return "CGALHybridPolyhedron";
+  return "CGALHybridPolyhedron (p: " + attributes.partName + " m: " + attributes.materialName + " c: " + attributes.color.toString() + ")";
 }

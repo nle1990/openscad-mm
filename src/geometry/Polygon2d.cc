@@ -122,5 +122,5 @@ bool Polygon2d::is_convex() const
 
 std::string Polygon2d::toString() const
 {
-  return "Polygon2d";
+  return "Polygon2d (p: " + attributes.partName + " m: " + attributes.materialName + " c: " + attributes.color.toString() + ")";
 }

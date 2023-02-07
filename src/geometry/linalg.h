@@ -57,4 +57,6 @@ public:
   }
 
   bool isValid() const { return this->minCoeff() >= 0.0f; }
+
+  std::string toString() const { return std::to_string(data()[0]) + "/" + std::to_string(data()[1]) + "/" + std::to_string(data()[2]) + "/" + std::to_string(data()[3]); }
 };

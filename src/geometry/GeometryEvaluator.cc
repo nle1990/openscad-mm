@@ -146,13 +146,13 @@ GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren3D(const Abstr
       Geometry::GeometryItem firstChild = children.second.front();
       // we might have a node with no geometry (e.g. for 2d geometries), or
       // a geometry with no node (e.g. a child of a GeometryList from a previous hull operation), but never neither
-      if(firstChild.first)
+      if(firstChild.second)
       {
-        resultAttributes = firstChild.first->getGeometryAttributes();
+        resultAttributes = firstChild.second->attributes;
       }
       else
       {
-        resultAttributes = firstChild.second->attributes;
+        resultAttributes = firstChild.first->getGeometryAttributes(); //FIXME-MM: we should probably not even resort to this, but just look for the first child that does have geometry, since this might ignore attributes set by a child node
       }
 
       PolySet *ps = new PolySet(3, resultAttributes, /* convex */ true);
@@ -258,13 +258,13 @@ GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren3D(const Abstr
     for (const auto& children : childGroups)
     {
       Geometry::Attributes resultAttributes;
-      if(children.second.front().first)
+      if(children.second.front().second)
       {
-        resultAttributes = children.second.front().first->getGeometryAttributes();
+        resultAttributes = children.second.front().second->attributes;
       }
       else
       {
-        resultAttributes = children.second.front().second->attributes;
+        resultAttributes = children.second.front().first->getGeometryAttributes(); //FIXME-MM: we should probably not even resort to this, but just look for the first child that does have geometry, since this might ignore attributes set by a child node
       }
 
       geometries.push_back(std::make_pair(std::shared_ptr<AbstractNode>(), CGALUtils::applyOperator3D(children.second, op, resultAttributes)));
@@ -494,13 +494,14 @@ std::map<Geometry::IrreconcilableAttributes, Geometry::Geometries> GeometryEvalu
 
     auto sortGeometry = [&](const Geometry::GeometryItem &item) {
       Geometry::IrreconcilableAttributes group;
-      if(item.first)
+      if(item.second)
       {
-        group = item.first->getIrreconcilableGeometryAttributes();
+        // Geometry attributes have precedence since nodes may have children that set further attributes, which their parents are not privy to
+        group = item.second->getIrreconcilableAttributes();
       }
       else
       {
-        group = item.second->getIrreconcilableAttributes();
+        group = item.first->getIrreconcilableGeometryAttributes();
       }
 
       if (chgeom && chgeom->getDimension() == 2) {

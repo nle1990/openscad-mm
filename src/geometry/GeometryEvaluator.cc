@@ -235,7 +235,7 @@ GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren3D(const Abstr
       }
       if (actualchildren.empty()) continue;
       if (actualchildren.size() == 1) geometries.push_back(std::make_pair(std::shared_ptr<AbstractNode>(), actualchildren.front().second));
-      else geometries.push_back(std::make_pair(std::shared_ptr<AbstractNode>(), CGALUtils::applyMinkowski(actualchildren, resultAttributes)));
+      else geometries.push_back(std::make_pair(std::shared_ptr<AbstractNode>(), CGALUtils::applyUnion3D(actualchildren.begin(), actualchildren.end(), resultAttributes)));
     }
 
     if(geometries.size() > 1)

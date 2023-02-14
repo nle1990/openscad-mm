@@ -200,8 +200,11 @@ GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren3D(const Abstr
       Geometry::Attributes resultAttributes;
       Geometry::Geometries actualchildren;
       for (const auto& item : children.second) {
-        if (item.second && !item.second->isEmpty()) actualchildren.push_back(item);
-        resultAttributes = item.second->attributes;
+        if (item.second && !item.second->isEmpty())
+        {
+          actualchildren.push_back(item);
+          resultAttributes = item.second->attributes;
+        }
       }
       if (actualchildren.empty()) continue;
       if (actualchildren.size() == 1) geometries.push_back(std::make_pair(std::shared_ptr<AbstractNode>(), actualchildren.front().second));
@@ -230,8 +233,11 @@ GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren3D(const Abstr
       Geometry::Attributes resultAttributes;
       Geometry::Geometries actualchildren;
       for (const auto& item : children.second) {
-        if (item.second && !item.second->isEmpty()) actualchildren.push_back(item);
-        resultAttributes = item.second->attributes;
+        if (item.second && !item.second->isEmpty())
+        {
+          actualchildren.push_back(item);
+          resultAttributes = item.second->attributes;
+        }
       }
       if (actualchildren.empty()) continue;
       if (actualchildren.size() == 1) geometries.push_back(std::make_pair(std::shared_ptr<AbstractNode>(), actualchildren.front().second));

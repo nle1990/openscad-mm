@@ -501,6 +501,9 @@ shared_ptr<const PolySet> getGeometryAsPolySet(const shared_ptr<const Geometry>&
   if (auto hybrid = dynamic_pointer_cast<const CGALHybridPolyhedron>(geom)) {
     return hybrid->toPolySet();
   }
+  if (auto geomlist = dynamic_pointer_cast<const GeometryList>(geom)) {
+    LOG(message_group::Error, Location::NONE, "", "Called getGeometryAsPolySet on GeometryList");
+  }
   return nullptr;
 }
 

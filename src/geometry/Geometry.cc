@@ -51,6 +51,7 @@ unsigned int GeometryList::getDimension() const
 {
   unsigned int dim = 0;
   for (const auto& item : this->children) {
+    if (!item.second) continue;
     if (!dim) dim = item.second->getDimension();
     else if (dim != item.second->getDimension()) {
       LOG(message_group::Warning, Location::NONE, "", "Mixing 2D and 3D objects is not supported.");

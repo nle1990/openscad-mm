@@ -135,7 +135,7 @@ GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren(const Abstrac
  */
 GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren3D(const AbstractNode& node, OpenSCADOperator op)
 {
-  auto childGroups = collectReconcilableChildGroups3D(node);
+  auto childGroups = collectReconcilableChildGroups(node, 3);
   if (childGroups.size() == 0) return ResultObject();
 
   if (op == OpenSCADOperator::HULL) {
@@ -483,7 +483,7 @@ Geometry::Geometries GeometryEvaluator::collectChildren3D(const AbstractNode& no
    Returns a list of 3D Geometry children with compatible attributes of the given node.
    May return empty geometries, but not nullptr objects
  */
-std::map<Geometry::IrreconcilableAttributes, Geometry::Geometries> GeometryEvaluator::collectReconcilableChildGroups3D(const AbstractNode& node)
+std::map<Geometry::IrreconcilableAttributes, Geometry::Geometries> GeometryEvaluator::collectReconcilableChildGroups(const AbstractNode& node, int dimension = -1)
 {
   std::map<Geometry::IrreconcilableAttributes, Geometry::Geometries> childgroups;
   for (const auto& item : this->visitedchildren[node.index()]) {
@@ -510,8 +510,9 @@ std::map<Geometry::IrreconcilableAttributes, Geometry::Geometries> GeometryEvalu
         group = item.first->getIrreconcilableGeometryAttributes();
       }
 
-      if (chgeom && chgeom->getDimension() == 2) {
-        LOG(message_group::Warning, item.first->modinst->location(), this->tree.getDocumentPath(), "Ignoring 2D child object for 3D operation");
+      if (chgeom && dimension != -1 && chgeom->getDimension() != dimension) {
+        //FIXME-MM: could we just not insert anything here?
+        LOG(message_group::Warning, item.first->modinst->location(), this->tree.getDocumentPath(), "Ignoring %1$iD child object for %2$iD operation", chgeom->getDimension(), dimension);
         childgroups[group].push_back(std::make_pair(item.first, nullptr)); // replace 2D geometry with empty geometry
       } else {
         // Add children if geometry is 3D OR null/empty

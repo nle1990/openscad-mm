@@ -1617,10 +1617,11 @@ Response GeometryEvaluator::visit(State& /*state*/, const AbstractPolyNode& /*no
 
 shared_ptr<const Geometry> GeometryEvaluator::projectionCut(const ProjectionNode& node)
 {
+  LOG(message_group::None, Location::NONE, "", "projectionCut");
   shared_ptr<const class Geometry> geom;
   shared_ptr<const Geometry> newgeom = applyToChildren3D(node, OpenSCADOperator::UNION).constptr();
   if (newgeom) {
-    auto Nptr = CGALUtils::getNefPolyhedronFromGeometry(newgeom);
+    auto Nptr = CGALUtils::getNefPolyhedronFromGeometry(newgeom); //FIXME-MM: need to account for geometrylist
     if (Nptr && !Nptr->isEmpty()) {
       Polygon2d *poly = CGALUtils::project(*Nptr, node.cut_mode);
       if (poly) {
@@ -1634,51 +1635,57 @@ shared_ptr<const Geometry> GeometryEvaluator::projectionCut(const ProjectionNode
 
 shared_ptr<const Geometry> GeometryEvaluator::projectionNoCut(const ProjectionNode& node)
 {
-  shared_ptr<const class Geometry> geom;
-  std::vector<const Polygon2d *> tmp_geom;
-  BoundingBox bounds;
-  for (const auto& item : this->visitedchildren[node.index()]) {
-    auto &chnode = item.first;
-    const shared_ptr<const Geometry>& chgeom = item.second;
-    if (chnode->modinst->isBackground()) continue;
+  LOG(message_group::None, Location::NONE, "", "projectionNoCut");
+  auto childGroups = collectReconcilableChildGroups(node, -1);
+  Geometry::Geometries geometries;
+  for (const auto& children : childGroups) {
+    shared_ptr<const class Geometry> geom;
+    std::vector<const Polygon2d *> tmp_geom;
+    BoundingBox bounds;
 
-    const Polygon2d *poly = nullptr;
+    for (const auto& item : children.second) {
+      const shared_ptr<const Geometry>& chgeom = item.second;
 
-    // Clipper version of Geometry projection
-    // Clipper doesn't handle meshes very well.
-    // It's better in V6 but not quite there. FIXME: stand-alone example.
-    // project chgeom -> polygon2d
-    auto chPS = CGALUtils::getGeometryAsPolySet(chgeom);
-    if (chPS) poly = PolySetUtils::project(*chPS);
+      const Polygon2d *poly = nullptr;
 
-    if (poly) {
-      bounds.extend(poly->getBoundingBox());
-      tmp_geom.push_back(poly);
+      // Clipper version of Geometry projection
+      // Clipper doesn't handle meshes very well.
+      // It's better in V6 but not quite there. FIXME: stand-alone example.
+      // project chgeom -> polygon2d
+      auto chPS = CGALUtils::getGeometryAsPolySet(chgeom);
+      if (chPS) poly = PolySetUtils::project(*chPS);
+
+      if (poly) {
+        bounds.extend(poly->getBoundingBox());
+        tmp_geom.push_back(poly);
+      }
+
+    }
+    int pow2 = ClipperUtils::getScalePow2(bounds);
+
+    ClipperLib::Clipper sumclipper;
+    for (auto poly : tmp_geom) {
+      ClipperLib::Paths result = ClipperUtils::fromPolygon2d(*poly, pow2);
+      // Using NonZero ensures that we don't create holes from polygons sharing
+      // edges since we're unioning a mesh
+      result = ClipperUtils::process(result, ClipperLib::ctUnion, ClipperLib::pftNonZero);
+      // Add correctly winded polygons to the main clipper
+      sumclipper.AddPaths(result, ClipperLib::ptSubject, true);
+      delete poly;
     }
 
-  }
-  int pow2 = ClipperUtils::getScalePow2(bounds);
+    ClipperLib::PolyTree sumresult;
+    // This is key - without StrictlySimple, we tend to get self-intersecting results
+    sumclipper.StrictlySimple(true);
+    sumclipper.Execute(ClipperLib::ctUnion, sumresult, ClipperLib::pftNonZero, ClipperLib::pftNonZero);
+    if (sumresult.Total() > 0) {
+      geom.reset(ClipperUtils::toPolygon2d(sumresult, pow2,node.getGeometryAttributes())); //FIXME-MM: I think node is the wrong node, we need the attributes of the children
+    }
 
-  ClipperLib::Clipper sumclipper;
-  for (auto poly : tmp_geom) {
-    ClipperLib::Paths result = ClipperUtils::fromPolygon2d(*poly, pow2);
-    // Using NonZero ensures that we don't create holes from polygons sharing
-    // edges since we're unioning a mesh
-    result = ClipperUtils::process(result, ClipperLib::ctUnion, ClipperLib::pftNonZero);
-    // Add correctly winded polygons to the main clipper
-    sumclipper.AddPaths(result, ClipperLib::ptSubject, true);
-    delete poly;
+    geometries.push_back(std::make_pair(std::shared_ptr<AbstractNode>(), geom));
   }
 
-  ClipperLib::PolyTree sumresult;
-  // This is key - without StrictlySimple, we tend to get self-intersecting results
-  sumclipper.StrictlySimple(true);
-  sumclipper.Execute(ClipperLib::ctUnion, sumresult, ClipperLib::pftNonZero, ClipperLib::pftNonZero);
-  if (sumresult.Total() > 0) {
-    geom.reset(ClipperUtils::toPolygon2d(sumresult, pow2,node.getGeometryAttributes())); //FIXME-MM: I think node is the wrong node, we need the attributes of the children
-  }
-
-  return geom;
+  return std::shared_ptr<Geometry>(new GeometryList(geometries));
 }
 
 

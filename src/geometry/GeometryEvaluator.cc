@@ -483,7 +483,7 @@ Geometry::Geometries GeometryEvaluator::collectChildren3D(const AbstractNode& no
    Returns a list of 3D Geometry children with compatible attributes of the given node.
    May return empty geometries, but not nullptr objects
  */
-std::map<Geometry::IrreconcilableAttributes, Geometry::Geometries> GeometryEvaluator::collectReconcilableChildGroups(const AbstractNode& node, int dimension = -1)
+std::map<Geometry::IrreconcilableAttributes, Geometry::Geometries> GeometryEvaluator::collectReconcilableChildGroups(const AbstractNode& node, int dimension)
 {
   std::map<Geometry::IrreconcilableAttributes, Geometry::Geometries> childgroups;
   for (const auto& item : this->visitedchildren[node.index()]) {

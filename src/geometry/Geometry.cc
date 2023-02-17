@@ -24,6 +24,7 @@ size_t GeometryList::memsize() const
 {
   size_t sum = 0;
   for (const auto& item : this->children) {
+    if(!item.second) continue;
     sum += item.second->memsize();
   }
   return sum;
@@ -33,6 +34,7 @@ BoundingBox GeometryList::getBoundingBox() const
 {
   BoundingBox bbox;
   for (const auto& item : this->children) {
+    if(!item.second) continue;
     bbox.extend(item.second->getBoundingBox());
   }
   return bbox;
@@ -42,6 +44,7 @@ std::string GeometryList::dump() const
 {
   std::stringstream out;
   for (const auto& item : this->children) {
+    if(!item.second) continue;
     out << item.second->dump();
   }
   return out.str();
@@ -64,6 +67,7 @@ unsigned int GeometryList::getDimension() const
 bool GeometryList::isEmpty() const
 {
   for (const auto& item : this->children) {
+    if(!item.second) continue;
     if (!item.second->isEmpty()) return false;
   }
   return true;
@@ -129,7 +133,8 @@ std::string GeometryList::toString() const
   bool start = true;
   for (const auto& item : this->children) {
     if(!start) os << ",\n";
-    os << "    " << item.second->toString() << "\n";
+    if(item.second) os << "    " << item.second->toString() << "\n";
+    else os << "    No geometry\n";
     if(item.first) os << "      (" << item.first->toString() << ")";
     start = false;
   }

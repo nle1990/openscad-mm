@@ -79,7 +79,7 @@ private:
   Polygon2d *applyFill2D(const AbstractNode& node);
   Geometry *applyHull3D(const AbstractNode& node);
   void applyResize3D(class CGAL_Nef_polyhedron& N, const Vector3d& newsize, const Eigen::Matrix<bool, 3, 1>& autosize);
-  Polygon2d *applyToChildren2D(const AbstractNode& node, OpenSCADOperator op);
+  std::shared_ptr<const Geometry> applyToChildren2D(const AbstractNode& node, OpenSCADOperator op);
   ResultObject applyToChildren3D(const AbstractNode& node, OpenSCADOperator op);
   ResultObject applyToChildren(const AbstractNode& node, OpenSCADOperator op);
   shared_ptr<const Geometry> projectionCut(const ProjectionNode& node);

@@ -538,52 +538,79 @@ std::map<Geometry::IrreconcilableAttributes, Geometry::Geometries> GeometryEvalu
 /*!
 
  */
-Polygon2d *GeometryEvaluator::applyToChildren2D(const AbstractNode& node, OpenSCADOperator op)
+std::shared_ptr<const Geometry> GeometryEvaluator::applyToChildren2D(const AbstractNode& node, OpenSCADOperator op)
 {
-  //FIXME-MM: I actually think this would need to be the first child, or various special cases, or what have you. as it stands, this is not correct
-  Geometry::Attributes resultAttributes = node.getGeometryAttributes();
-
   node.progress_report();
   if (op == OpenSCADOperator::MINKOWSKI) {
-    return applyMinkowski2D(node);
+    return std::shared_ptr<const Geometry>(applyMinkowski2D(node)); //FIXME-MM
   } else if (op == OpenSCADOperator::HULL) {
-    return applyHull2D(node);
+    return std::shared_ptr<const Geometry>(applyHull2D(node)); //FIXME-MM
   } else if (op == OpenSCADOperator::FILL) {
-    return applyFill2D(node);
+    return std::shared_ptr<const Geometry>(applyFill2D(node)); //FIXME-MM
   }
 
-  std::vector<const Polygon2d *> children = collectChildren2D(node);
+  auto childGroups = collectReconcilableChildGroups(node);
 
-  if (children.empty()) {
+  if (childGroups.empty()) {
     return nullptr;
   }
 
-  if (children.size() == 1) {
-    if (children[0]) {
-      return new Polygon2d(*children[0]); // Copy
-    } else {
-      return nullptr;
+  Geometry::Geometries geometries;
+  for (const auto& children : childGroups)
+  {
+    if (children.second.size() == 1) {
+      if(children.second.front().second) {
+        auto poly = dynamic_pointer_cast<const Polygon2d>(children.second.front().second);
+        geometries.push_back(std::make_pair(std::shared_ptr<AbstractNode>(), std::shared_ptr<Polygon2d>(new Polygon2d(*poly.get())))); // Copy
+      }
+      continue;
     }
+
+    ClipperLib::ClipType clipType;
+    switch (op) {
+    case OpenSCADOperator::UNION:
+      clipType = ClipperLib::ctUnion;
+      break;
+    case OpenSCADOperator::INTERSECTION:
+      clipType = ClipperLib::ctIntersection;
+      break;
+    case OpenSCADOperator::DIFFERENCE:
+      clipType = ClipperLib::ctDifference;
+      break;
+    default:
+      LOG(message_group::Error, Location::NONE, "", "Unknown boolean operation %1$d", int(op));
+      return nullptr;
+      break;
+    }
+
+    Geometry::Attributes resultAttributes;
+    Geometry::GeometryItem firstChild = children.second.front();
+    // we might have a node with no geometry (e.g. for 2d geometries), or
+    // a geometry with no node (e.g. a child of a GeometryList from a previous hull operation), but never neither
+    if(firstChild.second)
+    {
+      resultAttributes = firstChild.second->attributes;
+    }
+    else
+    {
+      resultAttributes = firstChild.first->getGeometryAttributes(); //FIXME-MM: we should probably not even resort to this, but just look for the first child that does have geometry, since this might ignore attributes set by a child node
+    }
+
+    geometries.push_back(std::make_pair(std::shared_ptr<AbstractNode>(), std::shared_ptr<Polygon2d>(ClipperUtils::apply(children.second, clipType, resultAttributes))));
   }
 
-  ClipperLib::ClipType clipType;
-  switch (op) {
-  case OpenSCADOperator::UNION:
-    clipType = ClipperLib::ctUnion;
-    break;
-  case OpenSCADOperator::INTERSECTION:
-    clipType = ClipperLib::ctIntersection;
-    break;
-  case OpenSCADOperator::DIFFERENCE:
-    clipType = ClipperLib::ctDifference;
-    break;
-  default:
-    LOG(message_group::Error, Location::NONE, "", "Unknown boolean operation %1$d", int(op));
+  if(geometries.size() > 1)
+  {
+    return std::shared_ptr<const Geometry>(new GeometryList(geometries));
+  }
+  else if(geometries.size() == 1)
+  {
+    return geometries.front().second;
+  }
+  else
+  {
     return nullptr;
-    break;
   }
-
-  return ClipperUtils::apply(children, clipType, resultAttributes); //FIXME-MM: resultAttributes
 }
 
 /*!
@@ -792,17 +819,16 @@ Response GeometryEvaluator::visit(State& state, const OffsetNode& node)
   if (state.isPostfix()) {
     shared_ptr<const Geometry> geom;
     if (!isSmartCached(node)) {
-      const Geometry *geometry = applyToChildren2D(node, OpenSCADOperator::UNION);
+      std::shared_ptr<const Geometry> geometry = applyToChildren2D(node, OpenSCADOperator::UNION);
       if (geometry) {
-        const Polygon2d *polygon = dynamic_cast<const Polygon2d *>(geometry);
+        auto polygon = dynamic_pointer_cast<const Polygon2d>(geometry);
         // ClipperLib documentation: The formula for the number of steps in a full
         // circular arc is ... Pi / acos(1 - arc_tolerance / abs(delta))
         double n = Calc::get_fragments_from_r(std::abs(node.delta), node.fn, node.fs, node.fa);
         double arc_tolerance = std::abs(node.delta) * (1 - cos_degrees(180 / n));
-        const Polygon2d *result = ClipperUtils::applyOffset(*polygon, node.delta, node.join_type, node.miter_limit, arc_tolerance);
+        const Polygon2d *result = ClipperUtils::applyOffset(*polygon.get(), node.delta, node.join_type, node.miter_limit, arc_tolerance);
         assert(result);
         geom.reset(result);
-        delete geometry;
       }
     } else {
       geom = smartCacheGet(node, false);
@@ -1427,22 +1453,21 @@ Response GeometryEvaluator::visit(State& state, const LinearExtrudeNode& node)
   if (state.isPostfix()) {
     shared_ptr<const Geometry> geom;
     if (!isSmartCached(node)) {
-      const Geometry *geometry = nullptr;
+      std::shared_ptr<const Geometry> geometry = nullptr;
       if (!node.filename.empty()) {
         DxfData dxf(node.fn, node.fs, node.fa, node.filename, node.layername, node.origin_x, node.origin_y, node.scale_x);
 
         Polygon2d *p2d = dxf.toPolygon2d(node.getGeometryAttributes()); //FIXME-MM: I think node is the wrong node, we need the attributes of the children
-        if (p2d) geometry = ClipperUtils::sanitize(*p2d);
+        if (p2d) geometry = std::shared_ptr<const Geometry>(ClipperUtils::sanitize(*p2d));
         delete p2d;
       } else {
         geometry = applyToChildren2D(node, OpenSCADOperator::UNION);
       }
       if (geometry) {
-        const Polygon2d *polygons = dynamic_cast<const Polygon2d *>(geometry);
-        Geometry *extruded = extrudePolygon(node, *polygons);
+        auto polygons = dynamic_pointer_cast<const Polygon2d>(geometry);
+        Geometry *extruded = extrudePolygon(node, *polygons.get());
         assert(extruded);
         geom.reset(extruded);
-        delete geometry;
       }
     } else {
       geom = smartCacheGet(node, false);
@@ -1583,20 +1608,19 @@ Response GeometryEvaluator::visit(State& state, const RotateExtrudeNode& node)
   if (state.isPostfix()) {
     shared_ptr<const Geometry> geom;
     if (!isSmartCached(node)) {
-      const Geometry *geometry = nullptr;
+      std::shared_ptr<const Geometry> geometry = nullptr;
       if (!node.filename.empty()) {
         DxfData dxf(node.fn, node.fs, node.fa, node.filename, node.layername, node.origin_x, node.origin_y, node.scale);
         Polygon2d *p2d = dxf.toPolygon2d(node.getGeometryAttributes()); //FIXME-MM: I think node is the wrong node, we need the attributes of the children
-        if (p2d) geometry = ClipperUtils::sanitize(*p2d);
+        if (p2d) geometry = std::shared_ptr<const Geometry>(ClipperUtils::sanitize(*p2d));
         delete p2d;
       } else {
         geometry = applyToChildren2D(node, OpenSCADOperator::UNION);
       }
       if (geometry) {
-        const Polygon2d *polygons = dynamic_cast<const Polygon2d *>(geometry);
-        Geometry *rotated = rotatePolygon(node, *polygons);
+        auto polygons = dynamic_pointer_cast<const Polygon2d>(geometry);
+        Geometry *rotated = rotatePolygon(node, *polygons.get());
         geom.reset(rotated);
-        delete geometry;
       }
     } else {
       geom = smartCacheGet(node, false);
@@ -1815,12 +1839,12 @@ Response GeometryEvaluator::visit(State& state, const RoofNode& node)
   if (state.isPostfix()) {
     shared_ptr<const Geometry> geom;
     if (!isSmartCached(node)) {
-      const Geometry *geometry = applyToChildren2D(node, OpenSCADOperator::UNION);
+      std::shared_ptr<const Geometry> geometry = applyToChildren2D(node, OpenSCADOperator::UNION);
       if (geometry) {
-        auto *polygons = dynamic_cast<const Polygon2d *>(geometry);
+        auto polygons = dynamic_pointer_cast<const Polygon2d>(geometry);
         Geometry *roof;
         try {
-          roof = roofOverPolygon(node, *polygons);
+          roof = roofOverPolygon(node, *polygons.get());
         } catch (RoofNode::roof_exception& e) {
           LOG(message_group::Error, node.modinst->location(), this->tree.getDocumentPath(),
               "Skeleton computation error. " + e.message());
@@ -1830,7 +1854,6 @@ Response GeometryEvaluator::visit(State& state, const RoofNode& node)
         }
         assert(roof);
         geom.reset(roof);
-        delete geometry;
       }
     } else {
       geom = smartCacheGet(node, false);

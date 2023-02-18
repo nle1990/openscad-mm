@@ -165,6 +165,7 @@ Polygon2d *apply(const std::vector<ClipperLib::Paths>& pathsvector,
 Polygon2d *apply(const std::vector<const Polygon2d *>& polygons,
                  ClipperLib::ClipType clipType, Geometry::Attributes attr) //FIXME-MM: is this the best way here? check if all polygons in teh vector have the same attributes instead? but what if not?
 {
+  //FIXME-MM: remove this method in favor of the one using Geometries
   BoundingBox bounds;
   for (auto polygon : polygons) {
     if (polygon) bounds.extend(polygon->getBoundingBox());
@@ -173,6 +174,37 @@ Polygon2d *apply(const std::vector<const Polygon2d *>& polygons,
 
   std::vector<ClipperLib::Paths> pathsvector;
   for (const auto& polygon : polygons) {
+    if (polygon) {
+      auto polypaths = fromPolygon2d(*polygon, pow2);
+      if (!polygon->isSanitized()) ClipperLib::PolyTreeToPaths(sanitize(polypaths), polypaths);
+      pathsvector.push_back(polypaths);
+    } else {
+      pathsvector.push_back(ClipperLib::Paths());
+    }
+  }
+  auto res = apply(pathsvector, clipType, pow2, attr);
+  assert(res);
+  return res;
+}
+
+/*!
+   Apply the clipper operator to the given polygons.
+
+   May return an empty Polygon2d, but will not return nullptr.
+ */
+Polygon2d *apply(Geometry::Geometries polygonItems,
+                 ClipperLib::ClipType clipType, Geometry::Attributes attr)
+{
+  BoundingBox bounds;
+  for (auto polygonItem : polygonItems) {
+    auto polygon = dynamic_pointer_cast<const Polygon2d>(polygonItem.second);
+    if (polygon) bounds.extend(polygon->getBoundingBox());
+  }
+  int pow2 = ClipperUtils::getScalePow2(bounds);
+
+  std::vector<ClipperLib::Paths> pathsvector;
+  for (const auto& polygonItem : polygonItems) {
+    auto polygon = dynamic_pointer_cast<const Polygon2d>(polygonItem.second);
     if (polygon) {
       auto polypaths = fromPolygon2d(*polygon, pow2);
       if (!polygon->isSanitized()) ClipperLib::PolyTreeToPaths(sanitize(polypaths), polypaths);

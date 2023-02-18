@@ -192,7 +192,7 @@ Polygon2d *apply(const std::vector<const Polygon2d *>& polygons,
 
    May return an empty Polygon2d, but will not return nullptr.
  */
-Polygon2d *apply(Geometry::Geometries polygonItems,
+Polygon2d *apply(const Geometry::Geometries& polygonItems,
                  ClipperLib::ClipType clipType, Geometry::Attributes attr)
 {
   BoundingBox bounds;

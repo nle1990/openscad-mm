@@ -516,6 +516,7 @@ std::map<Geometry::IrreconcilableAttributes, Geometry::Geometries> GeometryEvalu
         childgroups[group].push_back(std::make_pair(item.first, nullptr)); // replace 2D geometry with empty geometry
       } else {
         // Add children if geometry is 3D OR null/empty
+        if(dimension == 2) assert(dynamic_cast<const Polygon2d *>(chgeom.get()));
         childgroups[group].push_back(item);
       }
 

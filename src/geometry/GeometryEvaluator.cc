@@ -561,7 +561,7 @@ std::shared_ptr<const Geometry> GeometryEvaluator::applyToChildren2D(const Abstr
     if (children.second.size() == 1) {
       if(children.second.front().second) {
         auto poly = dynamic_pointer_cast<const Polygon2d>(children.second.front().second);
-        geometries.push_back(std::make_pair(std::shared_ptr<AbstractNode>(), std::shared_ptr<Polygon2d>(new Polygon2d(*poly.get())))); // Copy
+        geometries.push_back(std::make_pair(std::shared_ptr<AbstractNode>(), std::shared_ptr<Geometry>(new Polygon2d(*poly.get())))); // Copy
       }
       continue;
     }
@@ -596,7 +596,7 @@ std::shared_ptr<const Geometry> GeometryEvaluator::applyToChildren2D(const Abstr
       resultAttributes = firstChild.first->getGeometryAttributes(); //FIXME-MM: we should probably not even resort to this, but just look for the first child that does have geometry, since this might ignore attributes set by a child node
     }
 
-    geometries.push_back(std::make_pair(std::shared_ptr<AbstractNode>(), std::shared_ptr<Polygon2d>(ClipperUtils::apply(children.second, clipType, resultAttributes))));
+    geometries.push_back(std::make_pair(std::shared_ptr<AbstractNode>(), std::shared_ptr<Geometry>(ClipperUtils::apply(children.second, clipType, resultAttributes))));
   }
 
   if(geometries.size() > 1)

@@ -284,20 +284,30 @@ static void fill_minkowski_insides(const ClipperLib::Paths& a,
   }
 }
 
-Polygon2d *applyMinkowski(const std::vector<const Polygon2d *>& polygons, Geometry::Attributes attr) //FIXME-MM: possibly change (also attr does not get used if there is only one polygon in the list, in some cases)
+Polygon2d *applyMinkowski(const Geometry::Geometries& polygonItems, Geometry::Attributes attr)
 {
-  if (polygons.size() == 1) {
-    return polygons[0] ? new Polygon2d(*polygons[0]) : nullptr; // Just copy
+  std::shared_ptr<const Polygon2d> first_polygon = nullptr;
+  if(polygonItems.front().second)
+  {
+    first_polygon = dynamic_pointer_cast<const Polygon2d>(polygonItems.front().second);
   }
 
-  auto it = polygons.begin();
-  while (it != polygons.end() && !(*it)) ++it;
-  if (it == polygons.end()) return nullptr;
-  BoundingBox out_bounds = (*it)->getBoundingBox();
+  if (polygonItems.size() == 1) {
+    if(first_polygon)
+    {
+      return new Polygon2d(*first_polygon.get()); // Just copy
+    }
+    return nullptr;
+  }
+
+  auto it = polygonItems.begin();
+  while (it != polygonItems.end() && !it->second) ++it;
+  if (it == polygonItems.end()) return nullptr;
+  BoundingBox out_bounds = it->second->getBoundingBox();
   BoundingBox in_bounds;
-  for ( ; it != polygons.end(); ++it) {
-    if (*it) {
-      auto tmp = (*it)->getBoundingBox();
+  for ( ; it != polygonItems.end(); ++it) {
+    if (it->second) {
+      auto tmp = it->second->getBoundingBox();
       in_bounds.extend(tmp);
       out_bounds.min() += tmp.min();
       out_bounds.max() += tmp.max();
@@ -306,12 +316,19 @@ Polygon2d *applyMinkowski(const std::vector<const Polygon2d *>& polygons, Geomet
   int pow2 = getScalePow2(in_bounds.extend(out_bounds));
 
   ClipperLib::Clipper c;
-  auto lhs = fromPolygon2d(polygons[0] ? *polygons[0] : Polygon2d(attr), pow2);
+  auto lhs = fromPolygon2d(first_polygon ? *first_polygon.get() : Polygon2d(attr), pow2);
 
-  for (size_t i = 1; i < polygons.size(); ++i) {
-    if (!polygons[i]) continue;
+  it = polygonItems.begin();
+  for (size_t i = 1; i < polygonItems.size(); ++i) {
+    if (!it->second)
+    {
+      ++it;
+      continue;
+    }
+    auto poly = dynamic_pointer_cast<const Polygon2d>(it->second);
+
     ClipperLib::Paths minkowski_terms;
-    auto rhs = fromPolygon2d(*polygons[i], pow2);
+    auto rhs = fromPolygon2d(*poly.get(), pow2);
 
     // First, convolve each outline of lhs with the outlines of rhs
     for (auto const& rhs_path : rhs) {
@@ -331,9 +348,10 @@ Polygon2d *applyMinkowski(const std::vector<const Polygon2d *>& polygons, Geomet
     c.Clear();
     c.AddPaths(minkowski_terms, ClipperLib::ptSubject, true);
 
-    if (i != polygons.size() - 1) {
+    if (i != polygonItems.size() - 1) {
       c.Execute(ClipperLib::ctUnion, lhs, ClipperLib::pftNonZero, ClipperLib::pftNonZero);
     }
+    ++it;
   }
 
   ClipperLib::PolyTree polytree;

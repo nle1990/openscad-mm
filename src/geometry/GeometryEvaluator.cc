@@ -361,15 +361,44 @@ Geometry *GeometryEvaluator::applyHull3D(const AbstractNode& node)
   return nullptr;
 }
 
-Polygon2d *GeometryEvaluator::applyMinkowski2D(const AbstractNode& node)
+std::shared_ptr<const Geometry> GeometryEvaluator::applyMinkowski2D(const AbstractNode& node)
 {
-  //FIXME-MM: I actually think this would need to be the first child, or various special cases, or what have you. as it stands, this is not correct
-  Geometry::Attributes resultAttributes = node.getGeometryAttributes();
-  std::vector<const Polygon2d *> children = collectChildren2D(node);
-  if (!children.empty()) {
-    return ClipperUtils::applyMinkowski(children, resultAttributes); //FIXME-MM: resultAttributes
+  auto childGroups = collectReconcilableChildGroups(node);
+  if (childGroups.empty()) {
+    return nullptr;
   }
-  return nullptr;
+
+  Geometry::Geometries geometries;
+  for (const auto& children : childGroups)
+  {
+    Geometry::Attributes resultAttributes;
+    Geometry::GeometryItem firstChild = children.second.front();
+    // we might have a node with no geometry (e.g. for 2d geometries), or
+    // a geometry with no node (e.g. a child of a GeometryList from a previous hull operation), but never neither
+    if(firstChild.second)
+    {
+      resultAttributes = firstChild.second->attributes;
+    }
+    else
+    {
+      resultAttributes = firstChild.first->getGeometryAttributes(); //FIXME-MM: we should probably not even resort to this, but just look for the first child that does have geometry, since this might ignore attributes set by a child node
+    }
+
+    geometries.push_back(std::make_pair(std::shared_ptr<AbstractNode>(), std::shared_ptr<Geometry>(ClipperUtils::applyMinkowski(children.second, resultAttributes))));
+  }
+
+  if(geometries.size() > 1)
+  {
+    return std::shared_ptr<const Geometry>(new GeometryList(geometries));
+  }
+  else if(geometries.size() == 1)
+  {
+    return geometries.front().second;
+  }
+  else
+  {
+    return nullptr;
+  }
 }
 
 /*!
@@ -542,7 +571,7 @@ std::shared_ptr<const Geometry> GeometryEvaluator::applyToChildren2D(const Abstr
 {
   node.progress_report();
   if (op == OpenSCADOperator::MINKOWSKI) {
-    return std::shared_ptr<const Geometry>(applyMinkowski2D(node)); //FIXME-MM
+    return std::shared_ptr<const Geometry>(applyMinkowski2D(node));
   } else if (op == OpenSCADOperator::HULL) {
     return std::shared_ptr<const Geometry>(applyHull2D(node)); //FIXME-MM
   } else if (op == OpenSCADOperator::FILL) {

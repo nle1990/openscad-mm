@@ -74,7 +74,7 @@ private:
   std::vector<const class Polygon2d *> collectChildren2D(const AbstractNode& node);
   Geometry::Geometries collectChildren3D(const AbstractNode& node);
   std::map<Geometry::IrreconcilableAttributes, Geometry::Geometries> collectReconcilableChildGroups(const AbstractNode& node, int dimension = -1);
-  Polygon2d *applyMinkowski2D(const AbstractNode& node);
+  std::shared_ptr<const Geometry> applyMinkowski2D(const AbstractNode& node);
   Polygon2d *applyHull2D(const AbstractNode& node);
   Polygon2d *applyFill2D(const AbstractNode& node);
   Geometry *applyHull3D(const AbstractNode& node);

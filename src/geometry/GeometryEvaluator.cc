@@ -1010,6 +1010,8 @@ Response GeometryEvaluator::visit(State& state, const TransformNode& node)
             // the winding order for it to be correct.
             if (newpoly->isSanitized() && mat2.matrix().determinant() <= 0) {
               geom.reset(ClipperUtils::sanitize(*newpoly));
+            } else {
+              geom.reset(newpoly->copy());
             }
           } else if (geom->getDimension() == 3) {
             auto mutableGeom = res.asMutableGeometry();

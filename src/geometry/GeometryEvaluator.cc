@@ -850,7 +850,8 @@ Response GeometryEvaluator::visit(State& state, const OffsetNode& node)
     if (!isSmartCached(node)) {
       std::shared_ptr<const Geometry> geometry = applyToChildren2D(node, OpenSCADOperator::UNION);
       if (geometry) {
-        auto polygon = dynamic_pointer_cast<const Polygon2d>(geometry);
+        auto polygon = dynamic_pointer_cast<const Polygon2d>(geometry); //FIXME-MM: this is not always a polgon2d
+        assert(polygon); //FIXME-MM: I added this
         // ClipperLib documentation: The formula for the number of steps in a full
         // circular arc is ... Pi / acos(1 - arc_tolerance / abs(delta))
         double n = Calc::get_fragments_from_r(std::abs(node.delta), node.fn, node.fs, node.fa);
@@ -991,7 +992,8 @@ Response GeometryEvaluator::visit(State& state, const TransformNode& node)
         ResultObject res = applyToChildren(node, OpenSCADOperator::UNION);
         if ((geom = res.constptr())) {
           if (geom->getDimension() == 2) {
-            shared_ptr<const Polygon2d> polygons = dynamic_pointer_cast<const Polygon2d>(geom);
+            LOG(message_group::None, Location::NONE, "", "transforming 2d geometry (%1$s)", geom->toString());
+            shared_ptr<const Polygon2d> polygons = dynamic_pointer_cast<const Polygon2d>(geom); //FIXME-MM: I'm not sure this is still guaranteed to be a Polygon2d
             assert(polygons);
 
             // If we got a const object, make a copy
@@ -1495,7 +1497,8 @@ Response GeometryEvaluator::visit(State& state, const LinearExtrudeNode& node)
         geometry = applyToChildren2D(node, OpenSCADOperator::UNION);
       }
       if (geometry) {
-        auto polygons = dynamic_pointer_cast<const Polygon2d>(geometry);
+        auto polygons = dynamic_pointer_cast<const Polygon2d>(geometry); //FIXME-MM: this is not always a polygon2d
+        assert(polygons); //FIXME-MM: I added this
         Geometry *extruded = extrudePolygon(node, *polygons.get());
         assert(extruded);
         geom.reset(extruded);
@@ -1649,7 +1652,8 @@ Response GeometryEvaluator::visit(State& state, const RotateExtrudeNode& node)
         geometry = applyToChildren2D(node, OpenSCADOperator::UNION);
       }
       if (geometry) {
-        auto polygons = dynamic_pointer_cast<const Polygon2d>(geometry);
+        auto polygons = dynamic_pointer_cast<const Polygon2d>(geometry); //FIXME-MM: this is not always a polygon
+        assert(polygons); //FIXME-MM: I added this
         Geometry *rotated = rotatePolygon(node, *polygons.get());
         geom.reset(rotated);
       }
@@ -1872,7 +1876,8 @@ Response GeometryEvaluator::visit(State& state, const RoofNode& node)
     if (!isSmartCached(node)) {
       std::shared_ptr<const Geometry> geometry = applyToChildren2D(node, OpenSCADOperator::UNION);
       if (geometry) {
-        auto polygons = dynamic_pointer_cast<const Polygon2d>(geometry);
+        auto polygons = dynamic_pointer_cast<const Polygon2d>(geometry); //FIXME-MM: this is not always a polygon2d
+        assert(polygons); //FIXME-MM: I added this
         Geometry *roof;
         try {
           roof = roofOverPolygon(node, *polygons.get());

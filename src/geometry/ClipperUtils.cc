@@ -318,7 +318,7 @@ Polygon2d *applyMinkowski(const Geometry::Geometries& polygonItems, Geometry::At
   ClipperLib::Clipper c;
   auto lhs = fromPolygon2d(first_polygon ? *first_polygon.get() : Polygon2d(attr), pow2);
 
-  it = polygonItems.begin();
+  it = ++polygonItems.begin();
   for (size_t i = 1; i < polygonItems.size(); ++i) {
     if (!it->second)
     {

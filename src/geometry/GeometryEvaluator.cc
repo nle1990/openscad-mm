@@ -289,39 +289,71 @@ GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren3D(const Abstr
    May return an empty geometry but will not return nullptr.
  */
 
-Polygon2d *GeometryEvaluator::applyHull2D(const AbstractNode& node)
+std::shared_ptr<const Geometry> GeometryEvaluator::applyHull2D(const AbstractNode& node)
 {
-  std::vector<const Polygon2d *> children = collectChildren2D(node);
-  Polygon2d *geometry = new Polygon2d(node.getGeometryAttributes()); //FIXME-MM: I think node is the wrong node, since it's the hull node, we need the attributes of the children
+  auto childGroups = collectReconcilableChildGroups(node);
 
-  typedef CGAL::Point_2<CGAL::Cartesian<double>> CGALPoint2;
-  // Collect point cloud
-  std::list<CGALPoint2> points;
-  for (const auto& p : children) {
-    if (p) {
-      for (const auto& o : p->outlines()) {
-        for (const auto& v : o.vertices) {
-          points.push_back(CGALPoint2(v[0], v[1]));
+  Geometry::Geometries geometries;
+  for (const auto& children : childGroups)
+  {
+    Geometry::Attributes resultAttributes;
+    Geometry::GeometryItem firstChild = children.second.front();
+    // we might have a node with no geometry (e.g. for 2d geometries), or
+    // a geometry with no node (e.g. a child of a GeometryList from a previous hull operation), but never neither
+    if(firstChild.second)
+    {
+      resultAttributes = firstChild.second->attributes;
+    }
+    else
+    {
+      resultAttributes = firstChild.first->getGeometryAttributes(); //FIXME-MM: we should probably not even resort to this, but just look for the first child that does have geometry, since this might ignore attributes set by a child node
+    }
+
+    Polygon2d *geometry = new Polygon2d(resultAttributes);
+
+    typedef CGAL::Point_2<CGAL::Cartesian<double>> CGALPoint2;
+    // Collect point cloud
+    std::list<CGALPoint2> points;
+    for (const auto& geoItem : children.second) {
+      auto p = dynamic_pointer_cast<const Polygon2d>(geoItem.second);
+      if (p) {
+        for (const auto& o : p->outlines()) {
+          for (const auto& v : o.vertices) {
+            points.push_back(CGALPoint2(v[0], v[1]));
+          }
         }
       }
     }
-  }
-  if (points.size() > 0) {
-    // Apply hull
-    std::list<CGALPoint2> result;
-    try {
-      CGAL::convex_hull_2(points.begin(), points.end(), std::back_inserter(result));
-      // Construct Polygon2d
-      Outline2d outline;
-      for (const auto& p : result) {
-        outline.vertices.push_back(Vector2d(p[0], p[1]));
+    if (points.size() > 0) {
+      // Apply hull
+      std::list<CGALPoint2> result;
+      try {
+        CGAL::convex_hull_2(points.begin(), points.end(), std::back_inserter(result));
+        // Construct Polygon2d
+        Outline2d outline;
+        for (const auto& p : result) {
+          outline.vertices.push_back(Vector2d(p[0], p[1]));
+        }
+        geometry->addOutline(outline);
+      } catch (const CGAL::Failure_exception& e) {
+        LOG(message_group::Warning, Location::NONE, "", "GeometryEvaluator::applyHull2D() during CGAL::convex_hull_2(): %1$s", e.what());
       }
-      geometry->addOutline(outline);
-    } catch (const CGAL::Failure_exception& e) {
-      LOG(message_group::Warning, Location::NONE, "", "GeometryEvaluator::applyHull2D() during CGAL::convex_hull_2(): %1$s", e.what());
     }
+    geometries.push_back(std::make_pair(std::shared_ptr<AbstractNode>(), std::shared_ptr<const Geometry>(geometry)));
   }
-  return geometry;
+
+  if(geometries.size() > 1)
+  {
+    return std::shared_ptr<const Geometry>(new GeometryList(geometries));
+  }
+  else if(geometries.size() == 1)
+  {
+    return geometries.front().second;
+  }
+  else
+  {
+    return nullptr;
+  }
 }
 
 Polygon2d *GeometryEvaluator::applyFill2D(const AbstractNode& node)
@@ -573,7 +605,7 @@ std::shared_ptr<const Geometry> GeometryEvaluator::applyToChildren2D(const Abstr
   if (op == OpenSCADOperator::MINKOWSKI) {
     return std::shared_ptr<const Geometry>(applyMinkowski2D(node));
   } else if (op == OpenSCADOperator::HULL) {
-    return std::shared_ptr<const Geometry>(applyHull2D(node)); //FIXME-MM
+    return applyHull2D(node);
   } else if (op == OpenSCADOperator::FILL) {
     return std::shared_ptr<const Geometry>(applyFill2D(node)); //FIXME-MM
   }

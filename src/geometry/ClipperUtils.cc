@@ -295,7 +295,7 @@ Polygon2d *applyMinkowski(const Geometry::Geometries& polygonItems, Geometry::At
   if (polygonItems.size() == 1) {
     if(first_polygon)
     {
-      return new Polygon2d(*first_polygon.get()); // Just copy
+      return new Polygon2d(*first_polygon); // Just copy
     }
     return nullptr;
   }
@@ -316,7 +316,7 @@ Polygon2d *applyMinkowski(const Geometry::Geometries& polygonItems, Geometry::At
   int pow2 = getScalePow2(in_bounds.extend(out_bounds));
 
   ClipperLib::Clipper c;
-  auto lhs = fromPolygon2d(first_polygon ? *first_polygon.get() : Polygon2d(attr), pow2);
+  auto lhs = fromPolygon2d(first_polygon ? *first_polygon : Polygon2d(attr), pow2);
 
   it = ++polygonItems.begin();
   for (size_t i = 1; i < polygonItems.size(); ++i) {
@@ -328,7 +328,7 @@ Polygon2d *applyMinkowski(const Geometry::Geometries& polygonItems, Geometry::At
     auto poly = dynamic_pointer_cast<const Polygon2d>(it->second);
 
     ClipperLib::Paths minkowski_terms;
-    auto rhs = fromPolygon2d(*poly.get(), pow2);
+    auto rhs = fromPolygon2d(*poly, pow2);
 
     // First, convolve each outline of lhs with the outlines of rhs
     for (auto const& rhs_path : rhs) {

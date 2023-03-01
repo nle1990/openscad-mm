@@ -76,7 +76,7 @@ private:
   std::map<Geometry::IrreconcilableAttributes, Geometry::Geometries> collectReconcilableChildGroups(const AbstractNode& node, int dimension = -1);
   std::shared_ptr<const Geometry> applyMinkowski2D(const AbstractNode& node);
   std::shared_ptr<const Geometry> applyHull2D(const AbstractNode& node);
-  Polygon2d *applyFill2D(const AbstractNode& node);
+  std::shared_ptr<const Geometry> applyFill2D(const AbstractNode& node);
   Geometry *applyHull3D(const AbstractNode& node);
   void applyResize3D(class CGAL_Nef_polyhedron& N, const Vector3d& newsize, const Eigen::Matrix<bool, 3, 1>& autosize);
   std::shared_ptr<const Geometry> applyToChildren2D(const AbstractNode& node, OpenSCADOperator op);

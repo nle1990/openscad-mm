@@ -356,27 +356,54 @@ std::shared_ptr<const Geometry> GeometryEvaluator::applyHull2D(const AbstractNod
   }
 }
 
-Polygon2d *GeometryEvaluator::applyFill2D(const AbstractNode& node)
+std::shared_ptr<const Geometry> GeometryEvaluator::applyFill2D(const AbstractNode& node)
 {
-  //FIXME-MM: I actually think this would need to be the first child, or various special cases, or what have you. as it stands, this is not correct
-  Geometry::Attributes resultAttributes = node.getGeometryAttributes();
+  auto childGroups = collectReconcilableChildGroups(node);
 
-  // Merge and sanitize input geometry
-  std::vector<const Polygon2d *> children = collectChildren2D(node);
-  Polygon2d *geometry_in = ClipperUtils::apply(children, ClipperLib::ctUnion, resultAttributes); //FIXME-MM: resultAttributes
-
-  std::vector<const Polygon2d *> newchildren;
-  // Keep only the 'positive' outlines, eg: the outside edges
-  for (const auto& outline : geometry_in->outlines()) {
-    if (outline.positive) {
-      Polygon2d *poly = new Polygon2d(resultAttributes); //FIXME-MM: resultAttributes
-      poly->addOutline(outline);
-      newchildren.push_back(poly);
+  Geometry::Geometries geometries;
+  for (const auto& children : childGroups)
+  {
+    Geometry::Attributes resultAttributes;
+    Geometry::GeometryItem firstChild = children.second.front();
+    // we might have a node with no geometry (e.g. for 2d geometries), or
+    // a geometry with no node (e.g. a child of a GeometryList from a previous hull operation), but never neither
+    if(firstChild.second)
+    {
+      resultAttributes = firstChild.second->attributes;
     }
+    else
+    {
+      resultAttributes = firstChild.first->getGeometryAttributes(); //FIXME-MM: we should probably not even resort to this, but just look for the first child that does have geometry, since this might ignore attributes set by a child node
+    }
+
+    Polygon2d *geometry_in = ClipperUtils::apply(children.second, ClipperLib::ctUnion, resultAttributes);
+
+    Geometry::Geometries newchildren;
+    // Keep only the 'positive' outlines, eg: the outside edges
+    for (const auto& outline : geometry_in->outlines()) {
+      if (outline.positive) {
+        Polygon2d *poly = new Polygon2d(resultAttributes);
+        poly->addOutline(outline);
+        newchildren.push_back(std::make_pair(std::shared_ptr<AbstractNode>(), std::shared_ptr<const Geometry>(poly)));
+      }
+    }
+
+    // Re-merge geometry in case of nested outlines
+    geometries.push_back(std::make_pair(std::shared_ptr<AbstractNode>(), std::shared_ptr<const Geometry>(ClipperUtils::apply(newchildren, ClipperLib::ctUnion, resultAttributes))));
   }
 
-  // Re-merge geometry in case of nested outlines
-  return ClipperUtils::apply(newchildren, ClipperLib::ctUnion, resultAttributes); //FIXME-MM: resultAttributes
+  if(geometries.size() > 1)
+  {
+    return std::shared_ptr<const Geometry>(new GeometryList(geometries));
+  }
+  else if(geometries.size() == 1)
+  {
+    return geometries.front().second;
+  }
+  else
+  {
+    return nullptr;
+  }
 }
 
 Geometry *GeometryEvaluator::applyHull3D(const AbstractNode& node)
@@ -607,7 +634,7 @@ std::shared_ptr<const Geometry> GeometryEvaluator::applyToChildren2D(const Abstr
   } else if (op == OpenSCADOperator::HULL) {
     return applyHull2D(node);
   } else if (op == OpenSCADOperator::FILL) {
-    return std::shared_ptr<const Geometry>(applyFill2D(node)); //FIXME-MM
+    return applyFill2D(node);
   }
 
   auto childGroups = collectReconcilableChildGroups(node);

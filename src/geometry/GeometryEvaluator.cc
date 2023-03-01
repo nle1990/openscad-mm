@@ -603,7 +603,7 @@ std::shared_ptr<const Geometry> GeometryEvaluator::applyToChildren2D(const Abstr
 {
   node.progress_report();
   if (op == OpenSCADOperator::MINKOWSKI) {
-    return std::shared_ptr<const Geometry>(applyMinkowski2D(node));
+    return applyMinkowski2D(node);
   } else if (op == OpenSCADOperator::HULL) {
     return applyHull2D(node);
   } else if (op == OpenSCADOperator::FILL) {

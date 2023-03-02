@@ -588,14 +588,14 @@ std::map<Geometry::IrreconcilableAttributes, Geometry::Geometries> GeometryEvalu
 
     auto sortGeometry = [&](const Geometry::GeometryItem &item) {
       Geometry::IrreconcilableAttributes group;
-      if(item.second)
-      {
+      if(item.second) {
         // Geometry attributes have precedence since nodes may have children that set further attributes, which their parents are not privy to
         group = item.second->getIrreconcilableAttributes();
-      }
-      else
-      {
+      } else if(item.first) {
+        //FIXME-MM: possibly not even bother with null geometries
         group = item.first->getIrreconcilableGeometryAttributes();
+      } else {
+        return;
       }
 
       if (chgeom && dimension != -1 && chgeom->getDimension() != dimension) {

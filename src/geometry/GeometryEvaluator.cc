@@ -291,7 +291,7 @@ GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren3D(const Abstr
 
 std::shared_ptr<const Geometry> GeometryEvaluator::applyHull2D(const AbstractNode& node)
 {
-  auto childGroups = collectReconcilableChildGroups(node);
+  auto childGroups = collectReconcilableChildGroups(node, 2);
 
   Geometry::Geometries geometries;
   for (const auto& children : childGroups)
@@ -358,7 +358,7 @@ std::shared_ptr<const Geometry> GeometryEvaluator::applyHull2D(const AbstractNod
 
 std::shared_ptr<const Geometry> GeometryEvaluator::applyFill2D(const AbstractNode& node)
 {
-  auto childGroups = collectReconcilableChildGroups(node);
+  auto childGroups = collectReconcilableChildGroups(node, 2);
 
   Geometry::Geometries geometries;
   for (const auto& children : childGroups)
@@ -422,7 +422,7 @@ Geometry *GeometryEvaluator::applyHull3D(const AbstractNode& node)
 
 std::shared_ptr<const Geometry> GeometryEvaluator::applyMinkowski2D(const AbstractNode& node)
 {
-  auto childGroups = collectReconcilableChildGroups(node);
+  auto childGroups = collectReconcilableChildGroups(node, 2);
   if (childGroups.empty()) {
     return nullptr;
   }
@@ -637,7 +637,7 @@ std::shared_ptr<const Geometry> GeometryEvaluator::applyToChildren2D(const Abstr
     return applyFill2D(node);
   }
 
-  auto childGroups = collectReconcilableChildGroups(node);
+  auto childGroups = collectReconcilableChildGroups(node, 2);
 
   if (childGroups.empty()) {
     return nullptr;
@@ -649,7 +649,7 @@ std::shared_ptr<const Geometry> GeometryEvaluator::applyToChildren2D(const Abstr
     if (children.second.size() == 1) {
       if(children.second.front().second) {
         auto poly = dynamic_pointer_cast<const Polygon2d>(children.second.front().second);
-        geometries.push_back(std::make_pair(std::shared_ptr<AbstractNode>(), std::shared_ptr<const Geometry>(new Polygon2d(*poly.get())))); // Copy
+        geometries.push_back(std::make_pair(std::shared_ptr<AbstractNode>(), std::shared_ptr<const Geometry>(new Polygon2d(*poly)))); // Copy
       }
       continue;
     }

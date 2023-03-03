@@ -604,8 +604,16 @@ std::map<Geometry::IrreconcilableAttributes, Geometry::Geometries> GeometryEvalu
         childgroups[group].push_back(std::make_pair(item.first, nullptr)); // replace 2D geometry with empty geometry
       } else {
         // Add children if geometry is 3D OR null/empty
-        if(dimension == 2) assert(dynamic_cast<const Polygon2d *>(chgeom.get()));
-        childgroups[group].push_back(item);
+        if(dimension == 2) {
+          if(chgeom && !chgeom->isEmpty()) { //FIXME-MM: this is to make it more like collectChildren2d, but is this necessary? especially the nullptr stuff. could we do it for 3d as well?
+            assert(dynamic_cast<const Polygon2d *>(chgeom.get()));
+            childgroups[group].push_back(item);
+          } else if(item.first) {
+            childgroups[group].push_back(std::make_pair(item.first, nullptr));
+          }
+        } else {
+          childgroups[group].push_back(item);
+        }
       }
 
     };

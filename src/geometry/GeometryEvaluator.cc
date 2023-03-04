@@ -598,15 +598,15 @@ std::map<Geometry::IrreconcilableAttributes, Geometry::Geometries> GeometryEvalu
         return;
       }
 
-      if (chgeom && dimension != -1 && chgeom->getDimension() != dimension) {
+      if (item.second && dimension != -1 && item.second->getDimension() != dimension) {
         //FIXME-MM: could we just not insert anything here?
-        LOG(message_group::Warning, item.first->modinst->location(), this->tree.getDocumentPath(), "Ignoring %1$iD child object for %2$iD operation", chgeom->getDimension(), dimension);
+        LOG(message_group::Warning, item.first->modinst->location(), this->tree.getDocumentPath(), "Ignoring %1$iD child object for %2$iD operation", item.second->getDimension(), dimension);
         childgroups[group].push_back(std::make_pair(item.first, nullptr)); // replace 2D geometry with empty geometry
       } else {
         // Add children if geometry is 3D OR null/empty
         if(dimension == 2) {
-          if(chgeom && !chgeom->isEmpty()) { //FIXME-MM: this is to make it more like collectChildren2d, but is this necessary? especially the nullptr stuff. could we do it for 3d as well?
-            assert(dynamic_cast<const Polygon2d *>(chgeom.get()));
+          if(item.second && !item.second->isEmpty()) { //FIXME-MM: this is to make it more like collectChildren2d, but is this necessary? especially the nullptr stuff. could we do it for 3d as well?
+            assert(dynamic_cast<const Polygon2d *>(item.second.get()));
             childgroups[group].push_back(item);
           } else if(item.first) {
             childgroups[group].push_back(std::make_pair(item.first, nullptr));

@@ -511,20 +511,34 @@ std::map<Geometry::IrreconcilableAttributes, Geometry::Geometries> GeometryEvalu
         // Geometry attributes have precedence since nodes may have children that set further attributes, which their parents are not privy to
         group = item.second->getIrreconcilableAttributes();
       } else if(item.first) {
-        //FIXME-MM: possibly not even bother with null geometries
+        // FIXME-MM: this would ignore the material component of something like 'part("p1") material("m1");'. Although, of course,
+        // this only happens with empty geometries so maybe that's okay-ish?
+        // removing this else if breaks the following tests:
+        // 371 - cgalpngtest_issue666_2D
+        // 394 - cgalpngtest_intersection-tests
+        // 471 - cgalpngtest_issue666
+        // 774 - csgpngtest_issue666_2D
+        // 798 - csgpngtest_intersection-tests
+        // 874 - csgpngtest_issue666
+        // 1400 - dxfpngtest_issue666_2D
+        // 1464 - svgpngtest_issue666_2D
+        // use this to study the behaviour of this better and figure out what to do. Ideally it would be a better way of getting
+        // node attributes, maybe by letting children overwrite any attributes that have not been set at all (would need to add
+        // flags for this to nodes)
+        // what about part("p1") { material("m1"); material("m2"); } though?
+        // see issue #19 on my tracker
         group = item.first->getIrreconcilableGeometryAttributes();
       } else {
         return;
       }
 
       if (item.second && dimension != -1 && item.second->getDimension() != dimension) {
-        //FIXME-MM: could we just not insert anything here?
         LOG(message_group::Warning, item.first->modinst->location(), this->tree.getDocumentPath(), "Ignoring %1$iD child object for %2$iD operation", item.second->getDimension(), dimension);
         childgroups[group].push_back(std::make_pair(item.first, nullptr)); // replace 2D geometry with empty geometry
       } else {
         // Add children if geometry is 3D OR null/empty
         if(dimension == 2) {
-          if(item.second && !item.second->isEmpty()) { //FIXME-MM: this is to make it more like collectChildren2d, but is this necessary? especially the nullptr stuff. could we do it for 3d as well?
+          if(item.second && !item.second->isEmpty()) {
             assert(dynamic_cast<const Polygon2d *>(item.second.get()));
             childgroups[group].push_back(item);
           } else if(item.first) {

@@ -406,20 +406,6 @@ std::shared_ptr<const Geometry> GeometryEvaluator::applyFill2D(const AbstractNod
   }
 }
 
-Geometry *GeometryEvaluator::applyHull3D(const AbstractNode& node)
-{
-  Geometry::Geometries children = collectChildren3D(node);
-
-  //FIXME-MM: I actually think this would need to be the first child, or various special cases, or what have you. as it stands, this is not correct
-  Geometry::Attributes resultAttributes = node.getGeometryAttributes();
-  PolySet *P = new PolySet(3, resultAttributes);
-  if (CGALUtils::applyHull(children, *P)) { //FIXME-MM: resultAttributes
-    return P;
-  }
-  delete P;
-  return nullptr;
-}
-
 std::shared_ptr<const Geometry> GeometryEvaluator::applyMinkowski2D(const AbstractNode& node)
 {
   auto childGroups = collectReconcilableChildGroups(node, 2);

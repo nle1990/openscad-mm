@@ -447,44 +447,6 @@ std::shared_ptr<const Geometry> GeometryEvaluator::applyMinkowski2D(const Abstra
 }
 
 /*!
-   Returns a list of Polygon2d children of the given node.
-   May return empty Polygon2d object, but not nullptr objects
- */
-std::vector<const class Polygon2d *> GeometryEvaluator::collectChildren2D(const AbstractNode& node)
-{
-  std::vector<const Polygon2d *> children;
-  for (const auto& item : this->visitedchildren[node.index()]) {
-    auto &chnode = item.first;
-    const shared_ptr<const Geometry>& chgeom = item.second;
-    if (chnode->modinst->isBackground()) continue;
-
-    // NB! We insert into the cache here to ensure that all children of
-    // a node is a valid object. If we inserted as we created them, the
-    // cache could have been modified before we reach this point due to a large
-    // sibling object.
-    smartCacheInsert(*chnode, chgeom);
-
-    if (chgeom) {
-      if (chgeom->getDimension() == 3) {
-        LOG(message_group::Warning, item.first->modinst->location(), this->tree.getDocumentPath(), "Ignoring 3D child object for 2D operation");
-        children.push_back(nullptr); // replace 3D geometry with empty geometry
-      } else {
-        if (chgeom->isEmpty()) {
-          children.push_back(nullptr);
-        } else {
-          const Polygon2d *polygons = dynamic_cast<const Polygon2d *>(chgeom.get());
-          assert(polygons);
-          children.push_back(polygons);
-        }
-      }
-    } else {
-      children.push_back(nullptr);
-    }
-  }
-  return children;
-}
-
-/*!
    Since we can generate both Nef and non-Nef geometry, we need to insert it into
    the appropriate cache.
    This method inserts the geometry into the appropriate cache if it's not already cached.
@@ -521,35 +483,6 @@ shared_ptr<const Geometry> GeometryEvaluator::smartCacheGet(const AbstractNode& 
   if (hascgal && (preferNef || !hasgeom)) geom = CGALCache::instance()->get(key);
   else if (hasgeom) geom = GeometryCache::instance()->get(key);
   return geom;
-}
-
-/*!
-   Returns a list of 3D Geometry children of the given node.
-   May return empty geometries, but not nullptr objects
- */
-Geometry::Geometries GeometryEvaluator::collectChildren3D(const AbstractNode& node)
-{
-  Geometry::Geometries children;
-  for (const auto& item : this->visitedchildren[node.index()]) {
-    auto &chnode = item.first;
-    const shared_ptr<const Geometry>& chgeom = item.second;
-    if (chnode->modinst->isBackground()) continue;
-
-    // NB! We insert into the cache here to ensure that all children of
-    // a node is a valid object. If we inserted as we created them, the
-    // cache could have been modified before we reach this point due to a large
-    // sibling object.
-    smartCacheInsert(*chnode, chgeom);
-
-    if (chgeom && chgeom->getDimension() == 2) {
-      LOG(message_group::Warning, item.first->modinst->location(), this->tree.getDocumentPath(), "Ignoring 2D child object for 3D operation");
-      children.push_back(std::make_pair(item.first, nullptr)); // replace 2D geometry with empty geometry
-    } else {
-      // Add children if geometry is 3D OR null/empty
-      children.push_back(item);
-    }
-  }
-  return children;
 }
 
 

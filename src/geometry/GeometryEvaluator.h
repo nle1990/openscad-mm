@@ -71,8 +71,6 @@ private:
   shared_ptr<const Geometry> smartCacheGet(const AbstractNode& node, bool preferNef);
   bool isSmartCached(const AbstractNode& node);
   bool isValidDim(const Geometry::GeometryItem& item, unsigned int& dim) const;
-  std::vector<const class Polygon2d *> collectChildren2D(const AbstractNode& node);
-  Geometry::Geometries collectChildren3D(const AbstractNode& node);
   std::map<Geometry::IrreconcilableAttributes, Geometry::Geometries> collectReconcilableChildGroups(const AbstractNode& node, int dimension = -1);
   std::shared_ptr<const Geometry> applyMinkowski2D(const AbstractNode& node);
   std::shared_ptr<const Geometry> applyHull2D(const AbstractNode& node);

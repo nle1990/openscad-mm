@@ -172,7 +172,8 @@ GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren3D(const Abstr
     }
     else if(geometries.size() == 1)
     {
-      return ResultObject(geometries.front().second);
+      return ResultObject(new GeometryList(geometries)); //FIXME-MM: undo this (geometrylist compat check)
+      //return ResultObject(geometries.front().second);
     }
     else
     {
@@ -189,7 +190,10 @@ GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren3D(const Abstr
   }
 
   // Only one child -> this is a noop
-  if (childGroups.size() == 1 && childGroups.begin()->second.size() == 1) return ResultObject(childGroups.begin()->second.front().second);
+  if (childGroups.size() == 1 && childGroups.begin()->second.size() == 1) {
+    return ResultObject(new GeometryList(childGroups.begin()->second)); //FIXME-MM: undo this (geometrylist compat check)
+    //return ResultObject(childGroups.begin()->second.front().second);
+  }
 
   switch (op) {
   case OpenSCADOperator::MINKOWSKI:
@@ -217,7 +221,8 @@ GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren3D(const Abstr
     }
     else if(geometries.size() == 1)
     {
-      return ResultObject(geometries.front().second);
+      return ResultObject(new GeometryList(geometries)); //FIXME-MM: undo this (geometrylist compat check)
+      //return ResultObject(geometries.front().second);
     }
     else
     {
@@ -250,7 +255,8 @@ GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren3D(const Abstr
     }
     else if(geometries.size() == 1)
     {
-      return ResultObject(geometries.front().second);
+      return ResultObject(new GeometryList(geometries)); //FIXME-MM: undo this (geometrylist compat check)
+      //return ResultObject(geometries.front().second);
     }
     else
     {
@@ -348,7 +354,8 @@ std::shared_ptr<const Geometry> GeometryEvaluator::applyHull2D(const AbstractNod
   }
   else if(geometries.size() == 1)
   {
-    return geometries.front().second;
+    return std::shared_ptr<const Geometry>(new GeometryList(geometries)); //FIXME-MM: undo this (geometrylist compat check)
+    //return geometries.front().second;
   }
   else
   {
@@ -398,7 +405,8 @@ std::shared_ptr<const Geometry> GeometryEvaluator::applyFill2D(const AbstractNod
   }
   else if(geometries.size() == 1)
   {
-    return geometries.front().second;
+    return std::shared_ptr<const Geometry>(new GeometryList(geometries)); //FIXME-MM: undo this (geometrylist compat check)
+    //return geometries.front().second;
   }
   else
   {
@@ -438,7 +446,8 @@ std::shared_ptr<const Geometry> GeometryEvaluator::applyMinkowski2D(const Abstra
   }
   else if(geometries.size() == 1)
   {
-    return geometries.front().second;
+    return std::shared_ptr<const Geometry>(new GeometryList(geometries)); //FIXME-MM: undo this (geometrylist compat check)
+    //return geometries.front().second;
   }
   else
   {
@@ -634,7 +643,8 @@ std::shared_ptr<const Geometry> GeometryEvaluator::applyToChildren2D(const Abstr
   }
   else if(geometries.size() == 1)
   {
-    return geometries.front().second;
+    return std::shared_ptr<const Geometry>(new GeometryList(geometries)); //FIXME-MM: undo this (geometrylist compat check)
+    //return geometries.front().second;
   }
   else
   {

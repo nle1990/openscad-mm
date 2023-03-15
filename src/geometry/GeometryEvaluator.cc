@@ -37,6 +37,8 @@
 #include <CGAL/convex_hull_2.h>
 #include <CGAL/Point_2.h>
 
+#define GEOMETRYLIST_TEST 1
+
 GeometryEvaluator::GeometryEvaluator(const class Tree& tree) :
   tree(tree)
 {
@@ -172,8 +174,11 @@ GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren3D(const Abstr
     }
     else if(geometries.size() == 1)
     {
-      return ResultObject(new GeometryList(geometries)); //FIXME-MM: undo this (geometrylist compat check)
-      //return ResultObject(geometries.front().second);
+      #ifdef GEOMETRYLIST_TEST
+        return ResultObject(new GeometryList(geometries)); //FIXME-MM: undo this (geometrylist compat check)
+      #else
+        return ResultObject(geometries.front().second);
+      #endif
     }
     else
     {
@@ -191,8 +196,11 @@ GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren3D(const Abstr
 
   // Only one child -> this is a noop
   if (childGroups.size() == 1 && childGroups.begin()->second.size() == 1) {
-    return ResultObject(new GeometryList(childGroups.begin()->second)); //FIXME-MM: undo this (geometrylist compat check)
-    //return ResultObject(childGroups.begin()->second.front().second);
+    #ifdef GEOMETRYLIST_TEST
+      return ResultObject(new GeometryList(childGroups.begin()->second)); //FIXME-MM: undo this (geometrylist compat check)
+    #else
+      return ResultObject(childGroups.begin()->second.front().second);
+    #endif
   }
 
   switch (op) {
@@ -221,8 +229,11 @@ GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren3D(const Abstr
     }
     else if(geometries.size() == 1)
     {
-      return ResultObject(new GeometryList(geometries)); //FIXME-MM: undo this (geometrylist compat check)
-      //return ResultObject(geometries.front().second);
+      #ifdef GEOMETRYLIST_TEST
+        return ResultObject(new GeometryList(geometries)); //FIXME-MM: undo this (geometrylist compat check)
+      #else
+        return ResultObject(geometries.front().second);
+      #endif
     }
     else
     {
@@ -255,8 +266,11 @@ GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren3D(const Abstr
     }
     else if(geometries.size() == 1)
     {
-      return ResultObject(new GeometryList(geometries)); //FIXME-MM: undo this (geometrylist compat check)
-      //return ResultObject(geometries.front().second);
+      #ifdef GEOMETRYLIST_TEST
+        return ResultObject(new GeometryList(geometries)); //FIXME-MM: undo this (geometrylist compat check)
+      #else
+        return ResultObject(geometries.front().second);
+      #endif
     }
     else
     {
@@ -354,8 +368,11 @@ std::shared_ptr<const Geometry> GeometryEvaluator::applyHull2D(const AbstractNod
   }
   else if(geometries.size() == 1)
   {
-    return std::shared_ptr<const Geometry>(new GeometryList(geometries)); //FIXME-MM: undo this (geometrylist compat check)
-    //return geometries.front().second;
+    #ifdef GEOMETRYLIST_TEST
+      return std::shared_ptr<const Geometry>(new GeometryList(geometries)); //FIXME-MM: undo this (geometrylist compat check)
+    #else
+      return geometries.front().second;
+    #endif
   }
   else
   {
@@ -405,8 +422,11 @@ std::shared_ptr<const Geometry> GeometryEvaluator::applyFill2D(const AbstractNod
   }
   else if(geometries.size() == 1)
   {
-    return std::shared_ptr<const Geometry>(new GeometryList(geometries)); //FIXME-MM: undo this (geometrylist compat check)
-    //return geometries.front().second;
+    #ifdef GEOMETRYLIST_TEST
+      return std::shared_ptr<const Geometry>(new GeometryList(geometries)); //FIXME-MM: undo this (geometrylist compat check)
+    #else
+      return geometries.front().second;
+    #endif
   }
   else
   {
@@ -446,8 +466,11 @@ std::shared_ptr<const Geometry> GeometryEvaluator::applyMinkowski2D(const Abstra
   }
   else if(geometries.size() == 1)
   {
-    return std::shared_ptr<const Geometry>(new GeometryList(geometries)); //FIXME-MM: undo this (geometrylist compat check)
-    //return geometries.front().second;
+    #ifdef GEOMETRYLIST_TEST
+      return std::shared_ptr<const Geometry>(new GeometryList(geometries)); //FIXME-MM: undo this (geometrylist compat check)
+    #else
+      return geometries.front().second;
+    #endif
   }
   else
   {
@@ -643,8 +666,11 @@ std::shared_ptr<const Geometry> GeometryEvaluator::applyToChildren2D(const Abstr
   }
   else if(geometries.size() == 1)
   {
-    return std::shared_ptr<const Geometry>(new GeometryList(geometries)); //FIXME-MM: undo this (geometrylist compat check)
-    //return geometries.front().second;
+    #ifdef GEOMETRYLIST_TEST
+      return std::shared_ptr<const Geometry>(new GeometryList(geometries)); //FIXME-MM: undo this (geometrylist compat check)
+    #else
+      return geometries.front().second;
+    #endif
   }
   else
   {

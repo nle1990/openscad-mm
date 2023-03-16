@@ -565,7 +565,14 @@ std::map<Geometry::IrreconcilableAttributes, Geometry::Geometries> GeometryEvalu
       }
 
       if (item.second && dimension != -1 && item.second->getDimension() != dimension) {
-        LOG(message_group::Warning, item.first->modinst->location(), this->tree.getDocumentPath(), "Ignoring %1$iD child object for %2$iD operation", item.second->getDimension(), dimension);
+        Location loc = Location::NONE;
+        std::string path = "";
+        if(item.first) {
+          loc = item.first->modinst->location();
+          path = this->tree.getDocumentPath();
+        }
+        //FIXME-MM: I should check if adding nodes to the geometrylists causes any problems, down the line, and then we might not need to check for item.first anymore (see #22)
+        LOG(message_group::Warning, loc, path, "Ignoring %1$iD child object for %2$iD operation", item.second->getDimension(), dimension);
         childgroups[group].push_back(std::make_pair(item.first, nullptr)); // replace 2D geometry with empty geometry
       } else {
         // Add children if geometry is 3D OR null/empty

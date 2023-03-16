@@ -886,15 +886,32 @@ Response GeometryEvaluator::visit(State& state, const OffsetNode& node)
     if (!isSmartCached(node)) {
       std::shared_ptr<const Geometry> geometry = applyToChildren2D(node, OpenSCADOperator::UNION);
       if (geometry) {
-        auto polygon = dynamic_pointer_cast<const Polygon2d>(geometry); //FIXME-MM: this is not always a polgon2d
-        assert(polygon); //FIXME-MM: I added this
-        // ClipperLib documentation: The formula for the number of steps in a full
-        // circular arc is ... Pi / acos(1 - arc_tolerance / abs(delta))
-        double n = Calc::get_fragments_from_r(std::abs(node.delta), node.fn, node.fs, node.fa);
-        double arc_tolerance = std::abs(node.delta) * (1 - cos_degrees(180 / n));
-        const Polygon2d *result = ClipperUtils::applyOffset(*polygon.get(), node.delta, node.join_type, node.miter_limit, arc_tolerance);
-        assert(result);
-        geom.reset(result);
+        auto applyOffset = [&](std::shared_ptr<const Polygon2d> polygon) -> Geometry* {
+          // ClipperLib documentation: The formula for the number of steps in a full
+          // circular arc is ... Pi / acos(1 - arc_tolerance / abs(delta))
+          double n = Calc::get_fragments_from_r(std::abs(node.delta), node.fn, node.fs, node.fa);
+          double arc_tolerance = std::abs(node.delta) * (1 - cos_degrees(180 / n));
+          Polygon2d *result = ClipperUtils::applyOffset(*polygon.get(), node.delta, node.join_type, node.miter_limit, arc_tolerance);
+          assert(result);
+          return result;
+        };
+
+        if(std::shared_ptr<const GeometryList> geomlist = dynamic_pointer_cast<const GeometryList>(geometry)) {
+          Geometry::Geometries geometryItems = geomlist->flatten();
+          for(auto& item : geometryItems) {
+            if(!item.second) {
+              continue;
+            }
+            auto polygon = dynamic_pointer_cast<const Polygon2d>(item.second);
+            assert(polygon);
+            item.second.reset(applyOffset(polygon));
+          }
+          geom.reset(new GeometryList(geometryItems));
+        } else {
+          auto polygon = dynamic_pointer_cast<const Polygon2d>(geometry);
+          assert(polygon);
+          geom.reset(applyOffset(polygon));
+        }
       }
     } else {
       geom = smartCacheGet(node, false);

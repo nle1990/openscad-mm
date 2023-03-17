@@ -1408,8 +1408,7 @@ static Geometry *extrudePolygon(const LinearExtrudeNode& node, const Polygon2d& 
   // Twist or non-uniform scale makes convex polygons into unknown polyhedrons
   if (isConvex && non_linear) isConvex = unknown;
 
-  //FIXME-MM: I actually think this would need to be the first child, or various special cases, or what have you. as it stands, this is not correct
-  Geometry::Attributes resultAttributes = node.getGeometryAttributes();
+  Geometry::Attributes resultAttributes = poly.attributes;
   PolySet *ps = new PolySet(3, resultAttributes, isConvex);
   ps->setConvexity(node.convexity);
   if (node.height <= 0) return ps;
@@ -1573,11 +1572,28 @@ Response GeometryEvaluator::visit(State& state, const LinearExtrudeNode& node)
         geometry = applyToChildren2D(node, OpenSCADOperator::UNION);
       }
       if (geometry) {
-        auto polygons = dynamic_pointer_cast<const Polygon2d>(geometry); //FIXME-MM: this is not always a polygon2d
-        assert(polygons); //FIXME-MM: I added this
-        Geometry *extruded = extrudePolygon(node, *polygons.get());
-        assert(extruded);
-        geom.reset(extruded);
+        if(std::shared_ptr<const GeometryList> geomlist = dynamic_pointer_cast<const GeometryList>(geometry)) {
+          Geometry::Geometries geometryItems = geomlist->flatten();
+          for(auto& item : geometryItems) {
+            if(!item.second) {
+              continue;
+            }
+            std::shared_ptr<const Polygon2d> polygons = dynamic_pointer_cast<const Polygon2d>(item.second);
+            assert(polygons);
+            Geometry *extruded = extrudePolygon(node, *polygons.get());
+            assert(extruded);
+            item.second.reset(extruded);
+          }
+          geom.reset(new GeometryList(geometryItems));
+        }
+        else
+        {
+          auto polygons = dynamic_pointer_cast<const Polygon2d>(geometry);
+          assert(polygons);
+          Geometry *extruded = extrudePolygon(node, *polygons.get());
+          assert(extruded);
+          geom.reset(extruded);
+        }
       }
     } else {
       geom = smartCacheGet(node, false);

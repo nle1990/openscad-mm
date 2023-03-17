@@ -250,6 +250,7 @@ shared_ptr<const CGAL_Nef_polyhedron> getNefPolyhedronFromGeometry(const shared_
     return nef;
   } else if (auto geomlist = dynamic_pointer_cast<const GeometryList>(geom)) {
     LOG(message_group::Error, Location::NONE, "", "Called getNefPolyhedronFromGeometry on GeometryList");
+    assert(false);
   }
   return nullptr;
 }
@@ -503,6 +504,7 @@ shared_ptr<const PolySet> getGeometryAsPolySet(const shared_ptr<const Geometry>&
   }
   if (auto geomlist = dynamic_pointer_cast<const GeometryList>(geom)) {
     LOG(message_group::Error, Location::NONE, "", "Called getGeometryAsPolySet on GeometryList");
+    assert(false);
   }
   return nullptr;
 }

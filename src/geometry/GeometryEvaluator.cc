@@ -1771,17 +1771,35 @@ Response GeometryEvaluator::visit(State& /*state*/, const AbstractPolyNode& /*no
 
 shared_ptr<const Geometry> GeometryEvaluator::projectionCut(const ProjectionNode& node)
 {
-  LOG(message_group::None, Location::NONE, "", "projectionCut");
   shared_ptr<const class Geometry> geom;
   shared_ptr<const Geometry> newgeom = applyToChildren3D(node, OpenSCADOperator::UNION).constptr();
   if (newgeom) {
-    auto Nptr = CGALUtils::getNefPolyhedronFromGeometry(newgeom); //FIXME-MM: need to account for geometrylist
-    if (Nptr && !Nptr->isEmpty()) {
-      Polygon2d *poly = CGALUtils::project(*Nptr, node.cut_mode);
-      if (poly) {
-        poly->setConvexity(node.convexity);
-        geom.reset(poly);
+    auto projectGeometry = [&](const std::shared_ptr<const Geometry>& geom) -> Polygon2d* {
+      auto Nptr = CGALUtils::getNefPolyhedronFromGeometry(geom);
+      if (Nptr && !Nptr->isEmpty()) {
+        Polygon2d *poly = CGALUtils::project(*Nptr, node.cut_mode);
+        if (poly) {
+          poly->setConvexity(node.convexity);
+          return poly;
+        }
       }
+      return nullptr;
+    };
+
+    if(std::shared_ptr<const GeometryList> geomlist = dynamic_pointer_cast<const GeometryList>(newgeom)) {
+      Geometry::Geometries geometryItems = geomlist->flatten();
+      for(auto& item : geometryItems) {
+        if(!item.second) {
+          continue;
+        }
+        Polygon2d *poly = projectGeometry(item.second);
+        if(poly) item.second.reset(poly);
+
+      }
+      geom.reset(new GeometryList(geometryItems));
+    } else {
+      Polygon2d *poly = projectGeometry(newgeom);
+      if(poly) geom.reset(poly);
     }
   }
   return geom;
@@ -1789,7 +1807,6 @@ shared_ptr<const Geometry> GeometryEvaluator::projectionCut(const ProjectionNode
 
 shared_ptr<const Geometry> GeometryEvaluator::projectionNoCut(const ProjectionNode& node)
 {
-  LOG(message_group::None, Location::NONE, "", "projectionNoCut");
   auto childGroups = collectReconcilableChildGroups(node, -1);
   Geometry::Geometries geometries;
   for (const auto& children : childGroups) {

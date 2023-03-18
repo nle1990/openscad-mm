@@ -69,19 +69,21 @@ shared_ptr<const Geometry> GeometryEvaluator::evaluateGeometry(const AbstractNod
       this->root = CGALUtils::getGeometryAsPolySet(this->root);
     }
 
-    if (!allownef) {
+    if (!allownef) { //FIXME-MM: figure out the purpose of allownef, since geometrylists kind of interfere with trying to convert to a polyset here
       // We cannot render concave polygons, so tessellate any 3D PolySets
-      auto ps = CGALUtils::getGeometryAsPolySet(this->root);
-      if (ps && !ps->isEmpty()) {
-        // Since is_convex() doesn't handle non-planar faces, we need to tessellate
-        // also in the indeterminate state so we cannot just use a boolean comparison. See #1061
-        bool convex = bool(ps->convexValue()); // bool is true only if tribool is true, (not indeterminate and not false)
-        if (!convex) {
-          assert(ps->getDimension() == 3);
-          auto ps_tri = new PolySet(3, ps->attributes, ps->convexValue());
-          ps_tri->setConvexity(ps->getConvexity());
-          PolySetUtils::tessellate_faces(*ps, *ps_tri);
-          this->root.reset(ps_tri);
+      if(!dynamic_pointer_cast<const GeometryList>(this->root)) { //FIXME-MM: remove again, probably (possibly go through a flattened version of the geometrylist instead and convert to polysets there)
+        auto ps = CGALUtils::getGeometryAsPolySet(this->root);
+        if (ps && !ps->isEmpty()) {
+          // Since is_convex() doesn't handle non-planar faces, we need to tessellate
+          // also in the indeterminate state so we cannot just use a boolean comparison. See #1061
+          bool convex = bool(ps->convexValue()); // bool is true only if tribool is true, (not indeterminate and not false)
+          if (!convex) {
+            assert(ps->getDimension() == 3);
+            auto ps_tri = new PolySet(3, ps->attributes, ps->convexValue());
+            ps_tri->setConvexity(ps->getConvexity());
+            PolySetUtils::tessellate_faces(*ps, *ps_tri);
+            this->root.reset(ps_tri);
+          }
         }
       }
     }

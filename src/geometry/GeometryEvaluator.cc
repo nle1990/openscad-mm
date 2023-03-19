@@ -1746,10 +1746,24 @@ Response GeometryEvaluator::visit(State& state, const RotateExtrudeNode& node)
         geometry = applyToChildren2D(node, OpenSCADOperator::UNION);
       }
       if (geometry) {
-        auto polygons = dynamic_pointer_cast<const Polygon2d>(geometry); //FIXME-MM: this is not always a polygon
-        assert(polygons); //FIXME-MM: I added this
-        Geometry *rotated = rotatePolygon(node, *polygons.get());
-        geom.reset(rotated);
+        if(std::shared_ptr<const GeometryList> geomlist = dynamic_pointer_cast<const GeometryList>(geometry)) {
+          Geometry::Geometries geometryItems = geomlist->flatten();
+          for(auto& item : geometryItems) {
+            if(!item.second) {
+              continue;
+            }
+            std::shared_ptr<const Polygon2d> polygons = dynamic_pointer_cast<const Polygon2d>(item.second);
+            assert(polygons);
+            Geometry *rotated = rotatePolygon(node, *polygons.get());
+            item.second.reset(rotated);
+          }
+          geom.reset(new GeometryList(geometryItems));
+        } else {
+          auto polygons = dynamic_pointer_cast<const Polygon2d>(geometry);
+          assert(polygons);
+          Geometry *rotated = rotatePolygon(node, *polygons.get());
+          geom.reset(rotated);
+        }
       }
     } else {
       geom = smartCacheGet(node, false);

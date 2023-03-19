@@ -76,7 +76,6 @@ bool GeometryList::isEmpty() const
 void GeometryList::transform(const Transform3d& matrix)
 {
   if (this->isEmpty()) return;
-  LOG(message_group::Warning, Location::NONE, "", "GeometryList transform"); //FIXME-MM: make sure this works as expected
 
   for (auto& item : this->children)
   {
@@ -91,8 +90,6 @@ void GeometryList::resize(const Vector3d& newsize,
                                  const Eigen::Matrix<bool, 3, 1>& autosize)
 {
   if (this->isEmpty()) return;
-  LOG(message_group::Warning, Location::NONE, "", "GeometryList resize"); //FIXME-MM: make sure this works as expected
-
 
   for (auto& item : this->children)
   {

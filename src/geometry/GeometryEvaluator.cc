@@ -150,14 +150,13 @@ GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren3D(const Abstr
       Geometry::GeometryItem firstChild = children.second.front();
       // we might have a node with no geometry (e.g. for 2d geometries), or
       // a geometry with no node (e.g. a child of a GeometryList from a previous hull operation), but never neither
-      if(firstChild.second)
-      {
-        resultAttributes = firstChild.second->attributes;
-      }
-      else
-      {
-        resultAttributes = firstChild.first->getGeometryAttributes(); //FIXME-MM: we should probably not even resort to this, but just look for the first child that does have geometry, since this might ignore attributes set by a child node
-      }
+    if(firstChild.second) {
+      resultAttributes = firstChild.second->attributes;
+    } else if(firstChild.first) {
+      resultAttributes = firstChild.first->getGeometryAttributes(); //FIXME-MM: we should probably not even resort to this, but just look for the first child that does have geometry, since this might ignore attributes set by a child node
+    } else {
+      resultAttributes = Geometry::getDefaultAttributes();
+    }
 
       PolySet *ps = new PolySet(3, resultAttributes, /* convex */ true);
 
@@ -286,13 +285,12 @@ GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren3D(const Abstr
     for (const auto& children : childGroups)
     {
       Geometry::Attributes resultAttributes;
-      if(children.second.front().second)
-      {
+      if(children.second.front().second) {
         resultAttributes = children.second.front().second->attributes;
-      }
-      else
-      {
+      } else if(children.second.front().first) {
         resultAttributes = children.second.front().first->getGeometryAttributes(); //FIXME-MM: we should probably not even resort to this, but just look for the first child that does have geometry, since this might ignore attributes set by a child node
+      } else {
+        resultAttributes = Geometry::getDefaultAttributes();
       }
 
       geometries.push_back(std::make_pair(std::shared_ptr<AbstractNode>(), CGALUtils::applyOperator3D(children.second, op, resultAttributes)));
@@ -322,13 +320,12 @@ std::shared_ptr<const Geometry> GeometryEvaluator::applyHull2D(const AbstractNod
     Geometry::GeometryItem firstChild = children.second.front();
     // we might have a node with no geometry (e.g. for 2d geometries), or
     // a geometry with no node (e.g. a child of a GeometryList from a previous hull operation), but never neither
-    if(firstChild.second)
-    {
+    if(firstChild.second) {
       resultAttributes = firstChild.second->attributes;
-    }
-    else
-    {
+    } else if(firstChild.first) {
       resultAttributes = firstChild.first->getGeometryAttributes(); //FIXME-MM: we should probably not even resort to this, but just look for the first child that does have geometry, since this might ignore attributes set by a child node
+    } else {
+      resultAttributes = Geometry::getDefaultAttributes();
     }
 
     Polygon2d *geometry = new Polygon2d(resultAttributes);
@@ -393,13 +390,12 @@ std::shared_ptr<const Geometry> GeometryEvaluator::applyFill2D(const AbstractNod
     Geometry::GeometryItem firstChild = children.second.front();
     // we might have a node with no geometry (e.g. for 2d geometries), or
     // a geometry with no node (e.g. a child of a GeometryList from a previous hull operation), but never neither
-    if(firstChild.second)
-    {
+    if(firstChild.second) {
       resultAttributes = firstChild.second->attributes;
-    }
-    else
-    {
+    } else if(firstChild.first) {
       resultAttributes = firstChild.first->getGeometryAttributes(); //FIXME-MM: we should probably not even resort to this, but just look for the first child that does have geometry, since this might ignore attributes set by a child node
+    } else {
+      resultAttributes = Geometry::getDefaultAttributes();
     }
 
     Polygon2d *geometry_in = ClipperUtils::apply(children.second, ClipperLib::ctUnion, resultAttributes);
@@ -450,13 +446,12 @@ std::shared_ptr<const Geometry> GeometryEvaluator::applyMinkowski2D(const Abstra
     Geometry::GeometryItem firstChild = children.second.front();
     // we might have a node with no geometry (e.g. for 2d geometries), or
     // a geometry with no node (e.g. a child of a GeometryList from a previous hull operation), but never neither
-    if(firstChild.second)
-    {
+    if(firstChild.second) {
       resultAttributes = firstChild.second->attributes;
-    }
-    else
-    {
+    } else if(firstChild.second) {
       resultAttributes = firstChild.first->getGeometryAttributes(); //FIXME-MM: we should probably not even resort to this, but just look for the first child that does have geometry, since this might ignore attributes set by a child node
+    } else {
+      resultAttributes = Geometry::getDefaultAttributes();
     }
 
     geometries.push_back(std::make_pair(std::shared_ptr<AbstractNode>(), std::shared_ptr<const Geometry>(ClipperUtils::applyMinkowski(children.second, resultAttributes))));
@@ -563,7 +558,7 @@ std::map<Geometry::IrreconcilableAttributes, Geometry::Geometries> GeometryEvalu
         // see issue #19 on my tracker
         group = item.first->getIrreconcilableGeometryAttributes();
       } else {
-        return;
+        group = Geometry::getDefaultIrreconcilableAttributes();
       }
 
       if (item.second && dimension != -1 && item.second->getDimension() != dimension) {
@@ -582,7 +577,7 @@ std::map<Geometry::IrreconcilableAttributes, Geometry::Geometries> GeometryEvalu
           if(item.second && !item.second->isEmpty()) {
             assert(dynamic_cast<const Polygon2d *>(item.second.get()));
             childgroups[group].push_back(item);
-          } else if(item.first) {
+          } else {
             childgroups[group].push_back(std::make_pair(item.first, nullptr));
           }
         } else {
@@ -657,13 +652,12 @@ std::shared_ptr<const Geometry> GeometryEvaluator::applyToChildren2D(const Abstr
     Geometry::GeometryItem firstChild = children.second.front();
     // we might have a node with no geometry (e.g. for 2d geometries), or
     // a geometry with no node (e.g. a child of a GeometryList from a previous hull operation), but never neither
-    if(firstChild.second)
-    {
+    if(firstChild.second) {
       resultAttributes = firstChild.second->attributes;
-    }
-    else
-    {
+    } else if(firstChild.first) {
       resultAttributes = firstChild.first->getGeometryAttributes(); //FIXME-MM: we should probably not even resort to this, but just look for the first child that does have geometry, since this might ignore attributes set by a child node
+    } else {
+      resultAttributes = Geometry::getDefaultAttributes();
     }
 
     geometries.push_back(std::make_pair(std::shared_ptr<AbstractNode>(), std::shared_ptr<const Geometry>(ClipperUtils::apply(children.second, clipType, resultAttributes))));

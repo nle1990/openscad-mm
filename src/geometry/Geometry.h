@@ -63,6 +63,14 @@ public:
     return {.materialName = attributes.materialName, .partName = attributes.partName};
   }
 
+  static Geometry::IrreconcilableAttributes getDefaultIrreconcilableAttributes() {
+    return {.materialName = "", .partName = ""};
+  }
+
+  static Geometry::Attributes getDefaultAttributes() {
+    return {.materialName = "", .partName = "", .color = {-1.0f, -1.0f, -1.0f, 1.0f}, .metadataCollected = false};
+  }
+
 protected:
   int convexity;
 };

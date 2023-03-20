@@ -64,7 +64,7 @@ static void read_stl_facet(std::ifstream& f, stl_facet& facet) {
 }
 
 PolySet *import_stl(const std::string& filename, const Location& loc) {
-  std::unique_ptr<PolySet> p = std::make_unique<PolySet>(3, Geometry::Attributes{.metadataCollected = true});
+  std::unique_ptr<PolySet> p = std::make_unique<PolySet>(3, Geometry::Attributes{});
 
   // Open file and position at the end
   std::ifstream f(filename.c_str(), std::ios::in | std::ios::binary | std::ios::ate);
@@ -137,7 +137,7 @@ PolySet *import_stl(const std::string& filename, const Location& loc) {
         break;
       } else if (i >= 3) {
         AsciiError("extra vertex");
-        return new PolySet(3, Geometry::Attributes{.metadataCollected = true});
+        return new PolySet(3, Geometry::Attributes{});
       } else if (boost::regex_search(line, results, ex_vertices) &&
                  results.size() >= 4) {
         try {
@@ -153,7 +153,7 @@ PolySet *import_stl(const std::string& filename, const Location& loc) {
           }
         } catch (const boost::bad_lexical_cast& blc) {
           AsciiError("can't parse vertex");
-          return new PolySet(3, Geometry::Attributes{.metadataCollected = true});
+          return new PolySet(3, Geometry::Attributes{});
         }
       }
     }
@@ -188,12 +188,12 @@ PolySet *import_stl(const std::string& filename, const Location& loc) {
             "Binary STL '%1$s' error at byte %2$s: %3$s",
             filename, offset, ex.what());
       }
-      return new PolySet(3, Geometry::Attributes{.metadataCollected = true});
+      return new PolySet(3, Geometry::Attributes{});
     }
   } else {
     LOG(message_group::Error, loc, "",
         "STL format not recognized in '%1$s'.", filename);
-    return new PolySet(3, Geometry::Attributes{.metadataCollected = true});
+    return new PolySet(3, Geometry::Attributes{});
   }
   return p.release();
 }

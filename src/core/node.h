@@ -70,7 +70,7 @@ public:
   Color4f derivedColor = {-1.0f, -1.0f, -1.0f, 1.0f};
 
   Geometry::Attributes getGeometryAttributes() const {
-    return {.materialName = derivedMaterialName, .partName = derivedPartName, .color = derivedColor, .metadataCollected = true};
+    return {.materialName = derivedMaterialName, .partName = derivedPartName, .color = derivedColor};
   }
 
   Geometry::IrreconcilableAttributes getIrreconcilableGeometryAttributes() const {

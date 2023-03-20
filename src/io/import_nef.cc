@@ -10,7 +10,7 @@
 
 CGAL_Nef_polyhedron *import_nef3(const std::string& filename, const Location& loc)
 {
-  CGAL_Nef_polyhedron *N = new CGAL_Nef_polyhedron(nullptr, Geometry::Attributes{.metadataCollected = true});
+  CGAL_Nef_polyhedron *N = new CGAL_Nef_polyhedron(nullptr, Geometry::Attributes{});
 
   // Open file and position at the end
   std::ifstream f(filename.c_str(), std::ios::in | std::ios::binary);
@@ -26,7 +26,7 @@ CGAL_Nef_polyhedron *import_nef3(const std::string& filename, const Location& lo
   } catch (const CGAL::Failure_exception& e) {
     LOG(message_group::Warning, Location::NONE, "", "Failure trying to import '%1$s', import() at line %2$d", filename, loc.firstLine());
     LOG(message_group::None, Location::NONE, "", e.what());
-    N = new CGAL_Nef_polyhedron(nullptr, Geometry::Attributes{.metadataCollected = true});
+    N = new CGAL_Nef_polyhedron(nullptr, Geometry::Attributes{});
   }
   return N;
 }

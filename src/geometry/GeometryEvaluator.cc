@@ -153,6 +153,7 @@ GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren3D(const Abstr
     if(firstChild.second) {
       resultAttributes = firstChild.second->attributes;
     } else if(firstChild.first) {
+      LOG(message_group::None, Location::NONE, "", "applyToChildren3D: using node attributes due to null-geometry");
       resultAttributes = firstChild.first->getGeometryAttributes(); //FIXME-MM: we should probably not even resort to this, but just look for the first child that does have geometry, since this might ignore attributes set by a child node
     } else {
       resultAttributes = Geometry::getDefaultAttributes();
@@ -289,6 +290,7 @@ GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren3D(const Abstr
         resultAttributes = children.second.front().second->attributes;
       } else if(children.second.front().first) {
         resultAttributes = children.second.front().first->getGeometryAttributes(); //FIXME-MM: we should probably not even resort to this, but just look for the first child that does have geometry, since this might ignore attributes set by a child node
+        LOG(message_group::None, Location::NONE, "", "applyToChildren3D: using node attributes due to null-geometry");
       } else {
         resultAttributes = Geometry::getDefaultAttributes();
       }

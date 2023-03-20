@@ -20,7 +20,6 @@ public:
     std::string materialName = "";
     std::string partName = "";
     Color4f color = {-1.0f, -1.0f, -1.0f, 1.0f};
-    bool metadataCollected = false;
   };
 
   struct IrreconcilableAttributes {
@@ -68,7 +67,7 @@ public:
   }
 
   static Geometry::Attributes getDefaultAttributes() {
-    return {.materialName = "", .partName = "", .color = {-1.0f, -1.0f, -1.0f, 1.0f}, .metadataCollected = false};
+    return {.materialName = "", .partName = "", .color = {-1.0f, -1.0f, -1.0f, 1.0f}};
   }
 
 protected:

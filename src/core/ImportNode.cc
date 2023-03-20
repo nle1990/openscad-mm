@@ -198,7 +198,7 @@ const Geometry *ImportNode::createGeometry() const
   }
   case ImportType::DXF: {
     DxfData dd(this->fn, this->fs, this->fa, this->filename, this->layer.value_or(""), this->origin_x, this->origin_y, this->scale);
-    g = dd.toPolygon2d(Geometry::Attributes{.metadataCollected = true}); //FIXME-MM: investigate whether any attributes could be set here (or inside DxfData instead and removing this parameter)
+    g = dd.toPolygon2d(Geometry::Attributes{.materialName = derivedMaterialName, .partName = derivedPartName, .color = derivedColor}); //FIXME-MM: investigate whether any attributes could be set here (or inside DxfData instead and removing this parameter)
     break;
   }
 #ifdef ENABLE_CGAL
@@ -209,7 +209,7 @@ const Geometry *ImportNode::createGeometry() const
 #endif
   default:
     LOG(message_group::Error, Location::NONE, "", "Unsupported file format while trying to import file '%1$s', import() at line %2$d", this->filename, loc.firstLine());
-    g = new PolySet(3, Geometry::Attributes{.metadataCollected = true});
+    g = new PolySet(3, Geometry::Attributes{});
   }
 
   if (g) g->setConvexity(this->convexity);

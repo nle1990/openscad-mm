@@ -74,7 +74,7 @@ void write_vector(std::ostream& output, const Vector3f& v) {
 uint64_t append_stl(const PolySet& ps, std::ostream& output, bool binary)
 {
   uint64_t triangle_count = 0;
-  PolySet triangulated(3, Geometry::Attributes{.metadataCollected = true});
+  PolySet triangulated(3, Geometry::Attributes{});
   PolySetUtils::tessellate_faces(ps, triangulated);
 
   auto processTriangle = [&](const std::array<Vector3d, 3>& p) {
@@ -167,7 +167,7 @@ uint64_t append_stl(const CGAL_Nef_polyhedron& root_N, std::ostream& output,
     LOG(message_group::Export_Warning, Location::NONE, "", "Exported object may not be a valid 2-manifold and may need repair");
   }
 
-  PolySet ps(3, Geometry::Attributes{.metadataCollected = true});
+  PolySet ps(3, Geometry::Attributes{});
   if (!CGALUtils::createPolySetFromNefPolyhedron3(*(root_N.p3), ps)) {
     triangle_count += append_stl(ps, output, binary);
   } else {

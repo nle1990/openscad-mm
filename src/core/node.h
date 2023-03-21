@@ -65,16 +65,17 @@ public:
 
   int idx; // Node index (unique per tree)
 
-  std::string derivedMaterialName = "";
-  std::string derivedPartName = "";
-  Color4f derivedColor = {-1.0f, -1.0f, -1.0f, 1.0f};
+  Geometry::Attributes derivedAttributes = {};
 
   Geometry::Attributes getGeometryAttributes() const {
-    return {.materialName = derivedMaterialName, .partName = derivedPartName, .color = derivedColor};
+    return derivedAttributes;
   }
 
   Geometry::IrreconcilableAttributes getIrreconcilableGeometryAttributes() const {
-    return {.materialName = derivedMaterialName, .partName = derivedPartName};
+    return {
+      .materialName = derivedAttributes.materialName,
+      .partName = derivedAttributes.partName
+    };
   }
 
   std::shared_ptr<const AbstractNode> getNodeByID(int idx, std::deque<std::shared_ptr<const AbstractNode> >& path) const;

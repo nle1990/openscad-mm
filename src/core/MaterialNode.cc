@@ -54,14 +54,14 @@ static std::shared_ptr<AbstractNode> builtin_material(const ModuleInstantiation 
     node->materialName = parameters["name"].toString();
   }
 
-  node->derivedMaterialName = node->materialName;
+  node->derivedAttributes.materialName = node->materialName;
 
   auto returnNode = children.instantiate(node);
 
   std::function<void (const std::shared_ptr<const AbstractNode> &)> recursive_mark_children = [&](const std::shared_ptr<const AbstractNode> &currentNode) {
     for (auto child : currentNode->children) {
-      LOG(message_group::None, Location::NONE, "", "Child %1$s: marking materialName as %2$s, previously %3$s", child->toString(), node->materialName, child->derivedMaterialName);
-      child->derivedMaterialName = node->materialName;
+      LOG(message_group::None, Location::NONE, "", "Child %1$s: marking materialName as %2$s, previously %3$s", child->toString(), node->materialName, child->derivedAttributes.materialName);
+      child->derivedAttributes.materialName = node->materialName;
       recursive_mark_children(child);
     }
   };

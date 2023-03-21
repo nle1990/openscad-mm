@@ -270,7 +270,7 @@ static std::shared_ptr<AbstractNode> builtin_color(const ModuleInstantiation *in
 
   LOG(message_group::None, Location::NONE, "", "Color %1$s: instantiating children", node->toString());
 
-  node->derivedColor = node->color;
+  node->derivedAttributes.color = node->color;
 
   auto returnNode = children.instantiate(node);
 
@@ -291,7 +291,7 @@ static std::shared_ptr<AbstractNode> builtin_color(const ModuleInstantiation *in
       */
 
       LOG(message_group::None, Location::NONE, "", "Child %1$s: marking color as %2$s", child->toString(), node->toString());
-      child->derivedColor = node->color;
+      child->derivedAttributes.color = node->color;
       recursive_mark_children(child);
     }
   };

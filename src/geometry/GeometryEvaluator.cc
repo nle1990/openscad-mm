@@ -139,6 +139,22 @@ GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren(const Abstrac
  */
 GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren3D(const AbstractNode& node, OpenSCADOperator op)
 {
+  if(op == OpenSCADOperator::DIFFERENCE)
+  {
+    auto children = collectChildren3D(node);
+    Geometry::Attributes resultAttributes;
+    if(children.front().second) {
+      resultAttributes = children.front().second->attributes;
+    } else if(children.front().first) {
+      resultAttributes = children.front().first->getGeometryAttributes(); //FIXME-MM: we should probably not even resort to this, but just look for the first child that does have geometry, since this might ignore attributes set by a child node
+      LOG(message_group::None, Location::NONE, "", "applyToChildren3D: using node attributes due to null-geometry");
+    } else {
+      resultAttributes = Geometry::getDefaultAttributes();
+    }
+
+    return ResultObject(CGALUtils::applyOperator3D(children, op, resultAttributes));
+  }
+
   auto childGroups = collectReconcilableChildGroups(node, 3);
   if (childGroups.size() == 0) return ResultObject();
 
@@ -602,6 +618,51 @@ std::map<Geometry::IrreconcilableAttributes, Geometry::Geometries> GeometryEvalu
   }
   return childgroups;
 }
+
+/*!
+   Returns a list of 3D Geometry children of the given node.
+   May return empty geometries, but not nullptr objects
+ */
+Geometry::Geometries GeometryEvaluator::collectChildren3D(const AbstractNode& node)
+{
+  Geometry::Geometries children;
+  for (const auto& item : this->visitedchildren[node.index()]) {
+    auto &chnode = item.first;
+    const shared_ptr<const Geometry>& chgeom = item.second;
+    if (chnode->modinst->isBackground()) continue;
+
+    // NB! We insert into the cache here to ensure that all children of
+    // a node is a valid object. If we inserted as we created them, the
+    // cache could have been modified before we reach this point due to a large
+    // sibling object.
+    smartCacheInsert(*chnode, chgeom);
+
+    auto addGeometry = [&](const Geometry::GeometryItem &item) {
+      const shared_ptr<const Geometry>& geom = item.second;
+      if (geom && geom->getDimension() == 2) {
+        LOG(message_group::Warning, item.first->modinst->location(), this->tree.getDocumentPath(), "Ignoring 2D child object for 3D operation");
+        children.push_back(std::make_pair(item.first, nullptr)); // replace 2D geometry with empty geometry
+      } else {
+        // Add children if geometry is 3D OR null/empty
+        children.push_back(item);
+      }
+    };
+
+    if(auto geomlist = dynamic_pointer_cast<const GeometryList>(chgeom)) {
+      Geometry::Geometries geometries = geomlist->flatten();
+      for(const auto& subitem : geometries)
+      {
+        addGeometry(subitem);
+      }
+
+      continue;
+    }
+
+    addGeometry(item);
+  }
+  return children;
+}
+
 /*!
 
  */
@@ -616,7 +677,7 @@ std::shared_ptr<const Geometry> GeometryEvaluator::applyToChildren2D(const Abstr
     return applyFill2D(node);
   }
 
-  auto childGroups = collectReconcilableChildGroups(node, 2);
+  auto childGroups = collectReconcilableChildGroups(node, 2); //FIXME-MM: new semantics
 
   if (childGroups.empty()) {
     return nullptr;
@@ -641,7 +702,7 @@ std::shared_ptr<const Geometry> GeometryEvaluator::applyToChildren2D(const Abstr
     case OpenSCADOperator::INTERSECTION:
       clipType = ClipperLib::ctIntersection;
       break;
-    case OpenSCADOperator::DIFFERENCE:
+    case OpenSCADOperator::DIFFERENCE: //FIXME-MM: new semantics
       clipType = ClipperLib::ctDifference;
       break;
     default:

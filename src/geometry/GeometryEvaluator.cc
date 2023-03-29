@@ -494,6 +494,59 @@ std::shared_ptr<const Geometry> GeometryEvaluator::applyMinkowski2D(const Abstra
 }
 
 /*!
+   Returns a list of Polygon2d children of the given node.
+   May return empty Polygon2d object, but not nullptr objects
+ */
+std::vector<const class Polygon2d *> GeometryEvaluator::collectChildren2D(const AbstractNode& node)
+{
+  std::vector<const Polygon2d *> children;
+  for (const auto& item : this->visitedchildren[node.index()]) {
+    auto &chnode = item.first;
+    const shared_ptr<const Geometry>& chgeom = item.second;
+    if (chnode->modinst->isBackground()) continue;
+
+    // NB! We insert into the cache here to ensure that all children of
+    // a node is a valid object. If we inserted as we created them, the
+    // cache could have been modified before we reach this point due to a large
+    // sibling object.
+    smartCacheInsert(*chnode, chgeom);
+
+    auto addGeometry = [&](const Geometry::GeometryItem &item) {
+      const shared_ptr<const Geometry>& geom = item.second;
+      if (geom) {
+        if (geom->getDimension() == 3) {
+          LOG(message_group::Warning, item.first->modinst->location(), this->tree.getDocumentPath(), "Ignoring 3D child object for 2D operation");
+          children.push_back(nullptr); // replace 3D geometry with empty geometry
+        } else {
+          if (geom->isEmpty()) {
+            children.push_back(nullptr);
+          } else {
+            const Polygon2d *polygons = dynamic_cast<const Polygon2d *>(geom.get());
+            assert(polygons);
+            children.push_back(polygons);
+          }
+        }
+      } else {
+        children.push_back(nullptr);
+      }
+    };
+
+    if(auto geomlist = dynamic_pointer_cast<const GeometryList>(chgeom)) {
+      Geometry::Geometries geometries = geomlist->flatten();
+      for(const auto& subitem : geometries)
+      {
+        addGeometry(subitem);
+      }
+
+      continue;
+    }
+
+    addGeometry(item);
+  }
+  return children;
+}
+
+/*!
    Since we can generate both Nef and non-Nef geometry, we need to insert it into
    the appropriate cache.
    This method inserts the geometry into the appropriate cache if it's not already cached.
@@ -675,9 +728,31 @@ std::shared_ptr<const Geometry> GeometryEvaluator::applyToChildren2D(const Abstr
     return applyHull2D(node);
   } else if (op == OpenSCADOperator::FILL) {
     return applyFill2D(node);
+  } else if (op == OpenSCADOperator::DIFFERENCE) {
+    auto children = collectChildren2D(node);
+    if(children.size() == 1) {
+      if(!children.front()) {
+        return nullptr;
+      }
+      auto poly = children.front();
+      return std::shared_ptr<const Geometry>(new Polygon2d(*poly));
+    }
+    ClipperLib::ClipType clipType = ClipperLib::ctDifference;
+
+    Geometry::Attributes resultAttributes;
+    // we might have a node with no geometry (e.g. for 2d geometries), or
+    // a geometry with no node (e.g. a child of a GeometryList from a previous hull operation), but never neither
+    if(children.front()) {
+      resultAttributes = children.front()->attributes;
+    } else {
+      //if there is no geometry for the first child, the attributes don't matter anyway
+      resultAttributes = Geometry::getDefaultAttributes();
+    }
+
+    return std::shared_ptr<const Geometry>(ClipperUtils::apply(children, clipType, resultAttributes));
   }
 
-  auto childGroups = collectReconcilableChildGroups(node, 2); //FIXME-MM: new semantics
+  auto childGroups = collectReconcilableChildGroups(node, 2);
 
   if (childGroups.empty()) {
     return nullptr;
@@ -701,9 +776,6 @@ std::shared_ptr<const Geometry> GeometryEvaluator::applyToChildren2D(const Abstr
       break;
     case OpenSCADOperator::INTERSECTION:
       clipType = ClipperLib::ctIntersection;
-      break;
-    case OpenSCADOperator::DIFFERENCE: //FIXME-MM: new semantics
-      clipType = ClipperLib::ctDifference;
       break;
     default:
       LOG(message_group::Error, Location::NONE, "", "Unknown boolean operation %1$d", int(op));

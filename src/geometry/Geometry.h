@@ -70,6 +70,18 @@ public:
     return {.materialName = "", .partName = "", .color = {-1.0f, -1.0f, -1.0f, 1.0f}};
   }
 
+  virtual void setColor(Color4f color) {
+    attributes.color = color;
+  }
+
+  virtual void setMaterial(std::string material) {
+    attributes.materialName = material;
+  }
+
+  virtual void setPart(std::string part) {
+    attributes.partName = part;
+  }
+
 protected:
   int convexity;
 };
@@ -112,8 +124,11 @@ public:
   bool isEmpty() const override;
   Geometry *copy() const override { return new GeometryList(*this); }
   size_t numFacets() const override { assert(false && "not implemented"); return 0; }
-  virtual void transform(const Transform3d& matrix) override;
-  virtual void resize(const Vector3d& newsize, const Eigen::Matrix<bool, 3, 1>& autosize) override;
+  void transform(const Transform3d& matrix) override;
+  void resize(const Vector3d& newsize, const Eigen::Matrix<bool, 3, 1>& autosize) override;
+  void setColor(Color4f color) override;
+  void setMaterial(std::string material) override;
+  void setPart(std::string part) override;
 
   const Geometries& getChildren() const {
     return this->children;

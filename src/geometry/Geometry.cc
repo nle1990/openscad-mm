@@ -100,6 +100,44 @@ void GeometryList::resize(const Vector3d& newsize,
   }
 }
 
+
+
+void GeometryList::setColor(Color4f color) {
+  if (this->isEmpty()) return;
+
+  for (auto& item : this->children)
+  {
+    if(!item.second) continue;
+    Geometry* geom = item.second->copy();
+    geom->setColor(color);
+    item.second.reset(geom);
+  }
+}
+
+void GeometryList::setMaterial(std::string material) {
+  if (this->isEmpty()) return;
+
+  for (auto& item : this->children)
+  {
+    if(!item.second) continue;
+    Geometry* geom = item.second->copy();
+    geom->setMaterial(material);
+    item.second.reset(geom);
+  }
+}
+
+void GeometryList::setPart(std::string part) {
+  if (this->isEmpty()) return;
+
+  for (auto& item : this->children)
+  {
+    if(!item.second) continue;
+    Geometry* geom = item.second->copy();
+    geom->setPart(part);
+    item.second.reset(geom);
+  }
+}
+
 void flatten(const GeometryList& geomlist, GeometryList::Geometries& childlist)
 {
   for (const auto& item : geomlist.getChildren()) {

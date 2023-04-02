@@ -862,8 +862,6 @@ Response GeometryEvaluator::visit(State& state, const AbstractNode& node)
 }
 
 /*!
-   Custom nodes are handled here => implicit union
-   FIXME-MM
  */
 Response GeometryEvaluator::visit(State& state, const ColorNode& node)
 {
@@ -874,19 +872,19 @@ Response GeometryEvaluator::visit(State& state, const ColorNode& node)
   if (state.isPostfix()) {
     shared_ptr<const class Geometry> geom;
     if (!isSmartCached(node)) {
-      geom = applyToChildren(node, OpenSCADOperator::UNION).constptr();
+      geom = applyToChildren(node, OpenSCADOperator::UNION).constptr(); //FIXME-MM: get rid of the union, instead just build a geometry list
     } else {
       geom = smartCacheGet(node, state.preferNef());
     }
-    addToParent(state, node, geom);
+    Geometry *geom_copy = geom->copy();
+    geom_copy->setColor(node.color);
+    addToParent(state, node, shared_ptr<const class Geometry>(geom_copy));
     node.progress_report();
   }
   return Response::ContinueTraversal;
 }
 
 /*!
-   Custom nodes are handled here => implicit union
-   FIXME-MM
  */
 Response GeometryEvaluator::visit(State& state, const PartNode& node)
 {
@@ -897,19 +895,19 @@ Response GeometryEvaluator::visit(State& state, const PartNode& node)
   if (state.isPostfix()) {
     shared_ptr<const class Geometry> geom;
     if (!isSmartCached(node)) {
-      geom = applyToChildren(node, OpenSCADOperator::UNION).constptr();
+      geom = applyToChildren(node, OpenSCADOperator::UNION).constptr(); //FIXME-MM: get rid of the union, instead just build a geometry list
     } else {
       geom = smartCacheGet(node, state.preferNef());
     }
-    addToParent(state, node, geom);
+    Geometry *geom_copy = geom->copy();
+    geom_copy->setPart(node.partName);
+    addToParent(state, node, shared_ptr<const class Geometry>(geom_copy));
     node.progress_report();
   }
   return Response::ContinueTraversal;
 }
 
 /*!
-   Custom nodes are handled here => implicit union
-   FIXME-MM
  */
 Response GeometryEvaluator::visit(State& state, const MaterialNode& node)
 {
@@ -920,11 +918,13 @@ Response GeometryEvaluator::visit(State& state, const MaterialNode& node)
   if (state.isPostfix()) {
     shared_ptr<const class Geometry> geom;
     if (!isSmartCached(node)) {
-      geom = applyToChildren(node, OpenSCADOperator::UNION).constptr();
+      geom = applyToChildren(node, OpenSCADOperator::UNION).constptr(); //FIXME-MM: get rid of the union, instead just build a geometry list
     } else {
       geom = smartCacheGet(node, state.preferNef());
     }
-    addToParent(state, node, geom);
+    Geometry *geom_copy = geom->copy();
+    geom_copy->setMaterial(node.materialName);
+    addToParent(state, node, shared_ptr<const class Geometry>(geom_copy));
     node.progress_report();
   }
   return Response::ContinueTraversal;

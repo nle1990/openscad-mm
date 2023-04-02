@@ -59,4 +59,11 @@ public:
   bool isValid() const { return this->minCoeff() >= 0.0f; }
 
   std::string toString() const { return std::to_string(data()[0]) + "/" + std::to_string(data()[1]) + "/" + std::to_string(data()[2]) + "/" + std::to_string(data()[3]); }
+
+  bool operator<(const Color4f &o) const {
+      return data()[0] < o[0]
+      || (data()[0] == o[0] && data()[1] < o[1])
+      || (data()[0] == o[0] && data()[1] == o[1] && data()[2] < o[2])
+      || (data()[0] == o[0] && data()[1] == o[1] && data()[2] == o[2] && data()[3] < o[3]);
+  }
 };

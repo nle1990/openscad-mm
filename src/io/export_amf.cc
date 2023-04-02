@@ -41,6 +41,9 @@ struct triangle {
 };
 
 static int objectid;
+static int materialid;
+static std::map<std::pair<std::string, Color4f>, int> materials = {};
+const int VOID_MATERIAL_ID = 909; // 909 is defined by the amf specification to be the id for no material
 
 /*!
     Saves the current 3D CGAL Nef polyhedron as AMF to the given file.
@@ -101,6 +104,40 @@ static void append_amf(const CGAL_Nef_polyhedron& root_N, std::ostream& output)
       } while (hc != hc_end);
     }
 
+    int current_material = 0;
+    if(root_N.attributes.materialName != "" || root_N.attributes.color != Color4f{-1.0F, -1.0F, -1.0F, 1.0F})
+    {
+      LOG(message_group::None, Location::NONE, "", "amf object with special materials");
+      auto unique_attr = std::make_pair<std::string, Color4f>(std::string(root_N.attributes.materialName), Color4f(root_N.attributes.color));
+      if(materials.find(unique_attr) != materials.end()) {
+        current_material = materials[unique_attr];
+      } else {
+        materialid++;
+        if(materialid == VOID_MATERIAL_ID) {
+          materialid++;
+        }
+
+        //the material name can only contain [a-zA-Z0-9_], so no escaping is needed
+        output << " <material id=\"" << materialid << "\">\r\n";
+        if(root_N.attributes.materialName != "") {
+          output << "  <metadata type=\"name\">" << root_N.attributes.materialName << "</metadata>\r\n";
+        }
+        if(root_N.attributes.color != Color4f{-1.0F, -1.0F, -1.0F, 1.0F}) {
+          output << "  <color>";
+          output << "<r>" << root_N.attributes.color[0] << "</r>";
+          output << "<g>" << root_N.attributes.color[1] << "</g>";
+          output << "<b>" << root_N.attributes.color[2] << "</b>";
+          output << "<a>" << root_N.attributes.color[3] << "</a>";
+          output << "</color>\r\n";
+        }
+        output << " </material>\r\n";
+        current_material = materialid;
+        materials[unique_attr] = materialid;
+      }
+    } else {
+      LOG(message_group::None, Location::NONE, "", "amf object with no attributes");
+    }
+
     output << " <object id=\"" << objectid++ << "\">\r\n"
            << "  <mesh>\r\n";
     output << "   <vertices>\r\n";
@@ -119,7 +156,11 @@ static void append_amf(const CGAL_Nef_polyhedron& root_N, std::ostream& output)
       delete[] chrs;
     }
     output << "   </vertices>\r\n";
-    output << "   <volume>\r\n";
+    if(!current_material) {
+      output << "   <volume>\r\n";
+    } else {
+      output << "   <volume materialid=\"" << current_material << "\">\r\n";
+    }
     for (size_t i = 0; i < triangles.size(); ++i) {
       triangle t = triangles[i];
       output << "    <triangle>\r\n";
@@ -169,6 +210,8 @@ void export_amf(const shared_ptr<const Geometry>& geom, std::ostream& output)
     << "</metadata>\r\n";
 
   objectid = 0;
+  materialid = 0;
+  materials = {};
   append_amf(geom, output);
 
   output << "</amf>\r\n";

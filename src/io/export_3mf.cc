@@ -76,9 +76,72 @@ static bool append_polyset(const PolySet& ps, PLib3MFModelMeshObject *& model)
     export_3mf_error("Can't add mesh to 3MF model.", model);
     return false;
   }
-  if (lib3mf_object_setnameutf8(mesh, "OpenSCAD Model") != LIB3MF_OK) {
+
+  std::string modelName = ps.attributes.partName;
+  if(modelName == "") {
+    modelName = "OpenSCAD Model";
+  }
+
+  if (lib3mf_object_setnameutf8(mesh, modelName.c_str()) != LIB3MF_OK) {
     export_3mf_error("Can't set name for 3MF model.", model);
     return false;
+  }
+
+  // Since each geometry only ever has one color and material, it's enough to define a default
+  if(ps.attributes.color != Color4f{-1.0F, -1.0F, -1.0F, 1.0F} || ps.attributes.materialName != "") {
+    //FIXME-MM: maybe also add a map for color + material combinations to prevent duplicates, like in the amf export
+    PLib3MFDefaultPropertyHandler *defaultPropertyHandler;
+    if (lib3mf_object_createdefaultpropertyhandler(mesh, &defaultPropertyHandler) != LIB3MF_OK) {
+      export_3mf_error("Can't create property handler for 3MF model.", model);
+      return false;
+    }
+
+    BYTE red = 255;
+    BYTE green = 255;
+    BYTE blue = 255;
+    BYTE alpha = 255;
+
+    if(ps.attributes.color != Color4f{-1.0F, -1.0F, -1.0F, 1.0F}) {
+      red = ps.attributes.color[0] * 255.0f;
+      green = ps.attributes.color[1] * 255.0f;
+      blue = ps.attributes.color[2] * 255.0f;
+      alpha = ps.attributes.color[3] * 255.0f;
+    }
+
+    PLib3MFModelBaseMaterial *material;
+    DWORD materialResourceIndex;
+    DWORD materialResourceID;
+    if (lib3mf_model_addbasematerialgroup(model, &material) != LIB3MF_OK) {
+      export_3mf_error("Can't add base material group for 3MF model.", model);
+      lib3mf_release(defaultPropertyHandler);
+      return false;
+    }
+
+    if (lib3mf_basematerial_addmaterialutf8(material, ps.attributes.materialName.c_str(), red, green, blue, &materialResourceIndex) != LIB3MF_OK) {
+      export_3mf_error("Can't add material for 3MF model.", model);
+      lib3mf_release(defaultPropertyHandler);
+      lib3mf_release(material);
+      return false;
+    }
+
+    if(lib3mf_basematerial_setdisplaycolorrgba(material, materialResourceIndex, red, green, blue, alpha) != LIB3MF_OK) {
+      export_3mf_error("Can't set material color for 3MF model.", model);
+      lib3mf_release(defaultPropertyHandler);
+      lib3mf_release(material);
+      return false;
+    }
+
+    if (lib3mf_basematerial_getresourceid(material, &materialResourceID) != LIB3MF_OK) {
+      export_3mf_error("Can't get base material for 3MF model.", model);
+      lib3mf_release(defaultPropertyHandler);
+      lib3mf_release(material);
+      return false;
+    }
+
+    lib3mf_defaultpropertyhandler_setbasematerial(defaultPropertyHandler, materialResourceID, materialResourceIndex);
+
+    lib3mf_release(defaultPropertyHandler);
+    lib3mf_release(material);
   }
 
   auto vertexFunc = [&](const std::array<double, 3>& coords) -> bool {
@@ -162,6 +225,7 @@ static bool append_3mf(const shared_ptr<const Geometry>& geom, PLib3MFModelMeshO
  */
 void export_3mf(const shared_ptr<const Geometry>& geom, std::ostream& output)
 {
+  LOG(message_group::None, Location::NONE, "", "3mf export: lib3mf v1.x");
   DWORD interfaceVersionMajor, interfaceVersionMinor, interfaceVersionMicro;
   HRESULT result = lib3mf_getinterfaceversion(&interfaceVersionMajor, &interfaceVersionMinor, &interfaceVersionMicro);
   if (result != LIB3MF_OK) {
@@ -330,6 +394,7 @@ static bool append_3mf(const shared_ptr<const Geometry>& geom, Lib3MF::PWrapper&
 
 void export_3mf(const shared_ptr<const Geometry>& geom, std::ostream& output)
 {
+  LOG(message_group::None, Location::NONE, "", "3mf export: lib3mf v2.x");
   Lib3MF_uint32 interfaceVersionMajor, interfaceVersionMinor, interfaceVersionMicro;
   Lib3MF::PWrapper wrapper;
 

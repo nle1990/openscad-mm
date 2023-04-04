@@ -57,6 +57,8 @@ using namespace NMR;
 #include "cgalutils.h"
 #include "CGAL_Nef_polyhedron.h"
 
+static std::map<std::pair<std::string, Color4f>, std::pair<DWORD, DWORD>> materials = {};
+
 static void export_3mf_error(const std::string& msg, PLib3MFModel *& model)
 {
   LOG(message_group::Export_Error, Location::NONE, "", msg);
@@ -89,59 +91,63 @@ static bool append_polyset(const PolySet& ps, PLib3MFModelMeshObject *& model)
 
   // Since each geometry only ever has one color and material, it's enough to define a default
   if(ps.attributes.color != Color4f{-1.0F, -1.0F, -1.0F, 1.0F} || ps.attributes.materialName != "") {
-    //FIXME-MM: maybe also add a map for color + material combinations to prevent duplicates, like in the amf export
+    auto uniqueAttributes = std::pair<std::string, Color4f>(ps.attributes.materialName, ps.attributes.color);
+    std::pair<DWORD, DWORD> currentMaterial;
+    if(materials.find(uniqueAttributes) != materials.end()) {
+      currentMaterial = materials[uniqueAttributes];
+    } else {
+      BYTE red = 255;
+      BYTE green = 255;
+      BYTE blue = 255;
+      BYTE alpha = 255;
+
+      if(ps.attributes.color != Color4f{-1.0F, -1.0F, -1.0F, 1.0F}) {
+        red = ps.attributes.color[0] * 255.0f;
+        green = ps.attributes.color[1] * 255.0f;
+        blue = ps.attributes.color[2] * 255.0f;
+        alpha = ps.attributes.color[3] * 255.0f;
+      }
+
+      PLib3MFModelBaseMaterial *materialGroup;
+      DWORD materialResourceIndex;
+      DWORD materialResourceID;
+      if (lib3mf_model_addbasematerialgroup(model, &materialGroup) != LIB3MF_OK) {
+        export_3mf_error("Can't add base material group for 3MF model.", model);
+        return false;
+      }
+
+      if (lib3mf_basematerial_addmaterialutf8(materialGroup, ps.attributes.materialName.c_str(), red, green, blue, &materialResourceIndex) != LIB3MF_OK) {
+        export_3mf_error("Can't add material for 3MF model.", model);
+        lib3mf_release(materialGroup);
+        return false;
+      }
+
+      if(lib3mf_basematerial_setdisplaycolorrgba(materialGroup, materialResourceIndex, red, green, blue, alpha) != LIB3MF_OK) {
+        export_3mf_error("Can't set material color for 3MF model.", model);
+        lib3mf_release(materialGroup);
+        return false;
+      }
+
+      if (lib3mf_basematerial_getresourceid(materialGroup, &materialResourceID) != LIB3MF_OK) {
+        export_3mf_error("Can't get base material for 3MF model.", model);
+        lib3mf_release(materialGroup);
+        return false;
+      }
+
+      lib3mf_release(materialGroup);
+      currentMaterial = std::pair<DWORD, DWORD>(materialResourceID, materialResourceIndex);
+      materials[uniqueAttributes] = currentMaterial;
+    }
+
     PLib3MFDefaultPropertyHandler *defaultPropertyHandler;
     if (lib3mf_object_createdefaultpropertyhandler(mesh, &defaultPropertyHandler) != LIB3MF_OK) {
       export_3mf_error("Can't create property handler for 3MF model.", model);
       return false;
     }
 
-    BYTE red = 255;
-    BYTE green = 255;
-    BYTE blue = 255;
-    BYTE alpha = 255;
-
-    if(ps.attributes.color != Color4f{-1.0F, -1.0F, -1.0F, 1.0F}) {
-      red = ps.attributes.color[0] * 255.0f;
-      green = ps.attributes.color[1] * 255.0f;
-      blue = ps.attributes.color[2] * 255.0f;
-      alpha = ps.attributes.color[3] * 255.0f;
-    }
-
-    PLib3MFModelBaseMaterial *material;
-    DWORD materialResourceIndex;
-    DWORD materialResourceID;
-    if (lib3mf_model_addbasematerialgroup(model, &material) != LIB3MF_OK) {
-      export_3mf_error("Can't add base material group for 3MF model.", model);
-      lib3mf_release(defaultPropertyHandler);
-      return false;
-    }
-
-    if (lib3mf_basematerial_addmaterialutf8(material, ps.attributes.materialName.c_str(), red, green, blue, &materialResourceIndex) != LIB3MF_OK) {
-      export_3mf_error("Can't add material for 3MF model.", model);
-      lib3mf_release(defaultPropertyHandler);
-      lib3mf_release(material);
-      return false;
-    }
-
-    if(lib3mf_basematerial_setdisplaycolorrgba(material, materialResourceIndex, red, green, blue, alpha) != LIB3MF_OK) {
-      export_3mf_error("Can't set material color for 3MF model.", model);
-      lib3mf_release(defaultPropertyHandler);
-      lib3mf_release(material);
-      return false;
-    }
-
-    if (lib3mf_basematerial_getresourceid(material, &materialResourceID) != LIB3MF_OK) {
-      export_3mf_error("Can't get base material for 3MF model.", model);
-      lib3mf_release(defaultPropertyHandler);
-      lib3mf_release(material);
-      return false;
-    }
-
-    lib3mf_defaultpropertyhandler_setbasematerial(defaultPropertyHandler, materialResourceID, materialResourceIndex);
+    lib3mf_defaultpropertyhandler_setbasematerial(defaultPropertyHandler, currentMaterial.first, currentMaterial.second);
 
     lib3mf_release(defaultPropertyHandler);
-    lib3mf_release(material);
   }
 
   auto vertexFunc = [&](const std::array<double, 3>& coords) -> bool {
@@ -244,6 +250,8 @@ void export_3mf(const shared_ptr<const Geometry>& geom, std::ostream& output)
     LOG(message_group::Export_Error, Location::NONE, "", "Can't create 3MF model.");
     return;
   }
+
+  materials = {};
 
   if (!append_3mf(geom, model)) {
     if (model) lib3mf_release(model);

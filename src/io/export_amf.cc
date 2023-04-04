@@ -104,13 +104,12 @@ static void append_amf(const CGAL_Nef_polyhedron& root_N, std::ostream& output)
       } while (hc != hc_end);
     }
 
-    int current_material = 0;
+    int currentMaterial = 0;
     if(root_N.attributes.materialName != "" || root_N.attributes.color != Color4f{-1.0F, -1.0F, -1.0F, 1.0F})
     {
-      LOG(message_group::None, Location::NONE, "", "amf object with special materials");
-      auto unique_attr = std::make_pair<std::string, Color4f>(std::string(root_N.attributes.materialName), Color4f(root_N.attributes.color));
-      if(materials.find(unique_attr) != materials.end()) {
-        current_material = materials[unique_attr];
+      auto uniqueAttributes = std::pair<std::string, Color4f>(root_N.attributes.materialName, root_N.attributes.color);
+      if(materials.find(uniqueAttributes) != materials.end()) {
+        currentMaterial = materials[uniqueAttributes];
       } else {
         materialid++;
         if(materialid == VOID_MATERIAL_ID) {
@@ -131,11 +130,9 @@ static void append_amf(const CGAL_Nef_polyhedron& root_N, std::ostream& output)
           output << "</color>\r\n";
         }
         output << " </material>\r\n";
-        current_material = materialid;
-        materials[unique_attr] = materialid;
+        currentMaterial = materialid;
+        materials[uniqueAttributes] = materialid;
       }
-    } else {
-      LOG(message_group::None, Location::NONE, "", "amf object with no attributes");
     }
 
     output << " <object id=\"" << objectid++ << "\">\r\n"
@@ -156,10 +153,10 @@ static void append_amf(const CGAL_Nef_polyhedron& root_N, std::ostream& output)
       delete[] chrs;
     }
     output << "   </vertices>\r\n";
-    if(!current_material) {
+    if(!currentMaterial) {
       output << "   <volume>\r\n";
     } else {
-      output << "   <volume materialid=\"" << current_material << "\">\r\n";
+      output << "   <volume materialid=\"" << currentMaterial << "\">\r\n";
     }
     for (size_t i = 0; i < triangles.size(); ++i) {
       triangle t = triangles[i];

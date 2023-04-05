@@ -289,6 +289,8 @@ void export_3mf(const shared_ptr<const Geometry>& geom, std::ostream& output)
 #include "cgalutils.h"
 #include "CGAL_Nef_polyhedron.h"
 
+static std::map<std::pair<std::string, Color4f>, std::pair<Lib3MF_uint32, Lib3MF_uint32>> materials = {};
+
 static void export_3mf_error(const std::string& msg)
 {
   LOG(message_group::Export_Error, Location::NONE, "", msg);
@@ -302,7 +304,39 @@ static bool append_polyset(const PolySet& ps, Lib3MF::PWrapper& wrapper, Lib3MF:
   try {
     auto mesh = model->AddMeshObject();
     if (!mesh) return false;
-    mesh->SetName("OpenSCAD Model");
+
+
+    std::string modelName = ps.attributes.partName;
+    if(modelName == "") {
+      modelName = "OpenSCAD Model";
+    }
+
+    mesh->SetName(modelName);
+
+    if(ps.attributes.color != Color4f{-1.0F, -1.0F, -1.0F, 1.0F} || ps.attributes.materialName != "") {
+      auto uniqueAttributes = std::pair<std::string, Color4f>(ps.attributes.materialName, ps.attributes.color);
+      std::pair<Lib3MF_uint32, Lib3MF_uint32> currentMaterial;
+      if(materials.find(uniqueAttributes) != materials.end()) {
+        currentMaterial = materials[uniqueAttributes];
+      } else {
+        Lib3MF::sColor color = {.m_Red = 255, .m_Green = 255, .m_Blue = 255, .m_Alpha = 255};
+
+        if(ps.attributes.color != Color4f{-1.0F, -1.0F, -1.0F, 1.0F}) {
+          color.m_Red = ps.attributes.color[0] * 255.0f;
+          color.m_Green = ps.attributes.color[1] * 255.0f;
+          color.m_Blue = ps.attributes.color[2] * 255.0f;
+          color.m_Alpha = ps.attributes.color[3] * 255.0f;
+        }
+
+        Lib3MF::PBaseMaterialGroup materialGroup = model->AddBaseMaterialGroup();
+        Lib3MF_uint32 materialResourceID = materialGroup->GetResourceID();
+        Lib3MF_uint32 materialPropertyID = materialGroup->AddMaterial(ps.attributes.materialName, color);
+        currentMaterial = std::pair<Lib3MF_uint32, Lib3MF_uint32>(materialResourceID, materialPropertyID);
+        materials[uniqueAttributes] = currentMaterial;
+      }
+
+      mesh->SetObjectLevelProperty(currentMaterial.first, currentMaterial.second);
+    }
 
     auto vertexFunc = [&](const std::array<double, 3>& coords) -> bool {
         try {

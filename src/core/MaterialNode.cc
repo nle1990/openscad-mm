@@ -38,6 +38,7 @@
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/assign/std/vector.hpp>
 #include <boost/assign/list_of.hpp>
+#include <boost/regex.hpp>
 using namespace boost::assign; // bring 'operator+=()' into scope
 
 static std::shared_ptr<AbstractNode> builtin_material(const ModuleInstantiation *inst, Arguments arguments, Children children)
@@ -53,7 +54,12 @@ static std::shared_ptr<AbstractNode> builtin_material(const ModuleInstantiation 
   else if (parameters["name"].type() == Value::Type::NUMBER) {
     node->materialName = parameters["name"].toString();
   }
-
+  boost::regex regex("[^A-Za-z0-9_]");
+  std::string cleanName = boost::regex_replace(node->materialName, regex, "");
+  if(cleanName != node->materialName) {
+        LOG(message_group::Warning, inst->location(), parameters.documentRoot(), "material() expects strings containing alphanumeric characters and underscores only - \"%1s\" will be changed to \"%2s\"", node->materialName, cleanName);
+    node->materialName = cleanName;
+  }
   node->derivedAttributes.materialName = node->materialName;
 
   auto returnNode = children.instantiate(node);

@@ -38,6 +38,7 @@
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/assign/std/vector.hpp>
 #include <boost/assign/list_of.hpp>
+#include <boost/regex.hpp>
 using namespace boost::assign; // bring 'operator+=()' into scope
 
 static std::shared_ptr<AbstractNode> builtin_part(const ModuleInstantiation *inst, Arguments arguments, Children children)
@@ -52,6 +53,12 @@ static std::shared_ptr<AbstractNode> builtin_part(const ModuleInstantiation *ins
   }
   else if (parameters["name"].type() == Value::Type::NUMBER) {
     node->partName = parameters["name"].toString();
+  }
+  boost::regex regex("[^A-Za-z0-9_]");
+  std::string cleanName = boost::regex_replace(node->partName, regex, "");
+  if(cleanName != node->partName) {
+        LOG(message_group::Warning, inst->location(), parameters.documentRoot(), "part() expects strings containing alphanumeric characters and underscores only - \"%1s\" will be changed to \"%2s\"", node->partName, cleanName);
+    node->partName = cleanName;
   }
 
   node->derivedAttributes.partName = node->partName;

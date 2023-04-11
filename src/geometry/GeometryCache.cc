@@ -13,7 +13,6 @@ GeometryCache *GeometryCache::inst = nullptr;
 
 shared_ptr<const Geometry> GeometryCache::get(const std::string& id) const
 {
-  return nullptr; //FIXME-MM: undo. I disabled it, just in case, to avoid heisenbugs
   const auto& geom = this->cache[id]->geom;
 #ifdef DEBUG
   PRINTDB("Geometry Cache hit: %s (%d bytes)", id.substr(0, 40) % (geom ? geom->memsize() : 0));

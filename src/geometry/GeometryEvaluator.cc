@@ -166,14 +166,14 @@ GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren3D(const Abstr
       Geometry::GeometryItem firstChild = children.second.front();
       // we might have a node with no geometry (e.g. for 2d geometries), or
       // a geometry with no node (e.g. a child of a GeometryList from a previous hull operation), but never neither
-    if(firstChild.second) {
-      resultAttributes = firstChild.second->attributes;
-    } else if(firstChild.first) {
-      LOG(message_group::None, Location::NONE, "", "applyToChildren3D: using node attributes due to null-geometry");
-      resultAttributes = firstChild.first->getGeometryAttributes(); //FIXME-MM: we should probably not even resort to this, but just look for the first child that does have geometry, since this might ignore attributes set by a child node
-    } else {
-      resultAttributes = Geometry::getDefaultAttributes();
-    }
+      if(firstChild.second) {
+        resultAttributes = firstChild.second->attributes;
+      } else if(firstChild.first) {
+        LOG(message_group::None, Location::NONE, "", "applyToChildren3D: using node attributes due to null-geometry");
+        resultAttributes = firstChild.first->getGeometryAttributes(); //FIXME-MM: we should probably not even resort to this, but just look for the first child that does have geometry, since this might ignore attributes set by a child node
+      } else {
+        resultAttributes = Geometry::getDefaultAttributes();
+      }
 
       PolySet *ps = new PolySet(3, resultAttributes, /* convex */ true);
 
@@ -227,13 +227,22 @@ GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren3D(const Abstr
     Geometry::Geometries geometries;
     for (const auto& children : childGroups)
     {
+      Geometry::GeometryItem firstChild = children.second.front();
       Geometry::Attributes resultAttributes;
+      if(firstChild.second) {
+        resultAttributes = firstChild.second->attributes;
+      } else if(firstChild.first) {
+        LOG(message_group::None, Location::NONE, "", "applyToChildren3D: using node attributes due to null-geometry");
+        resultAttributes = firstChild.first->getGeometryAttributes(); //FIXME-MM: we should probably not even resort to this, but just look for the first child that does have geometry, since this might ignore attributes set by a child node
+      } else {
+        resultAttributes = Geometry::getDefaultAttributes();
+      }
+
       Geometry::Geometries actualchildren;
       for (const auto& item : children.second) {
         if (item.second && !item.second->isEmpty())
         {
           actualchildren.push_back(item);
-          resultAttributes = item.second->attributes;
         }
       }
       if (actualchildren.empty()) continue;
@@ -264,13 +273,22 @@ GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren3D(const Abstr
     Geometry::Geometries geometries;
     for (const auto& children : childGroups)
     {
+      Geometry::GeometryItem firstChild = children.second.front();
       Geometry::Attributes resultAttributes;
+      if(firstChild.second) {
+        resultAttributes = firstChild.second->attributes;
+      } else if(firstChild.first) {
+        LOG(message_group::None, Location::NONE, "", "applyToChildren3D: using node attributes due to null-geometry");
+        resultAttributes = firstChild.first->getGeometryAttributes(); //FIXME-MM: we should probably not even resort to this, but just look for the first child that does have geometry, since this might ignore attributes set by a child node
+      } else {
+        resultAttributes = Geometry::getDefaultAttributes();
+      }
+
       Geometry::Geometries actualchildren;
       for (const auto& item : children.second) {
         if (item.second && !item.second->isEmpty())
         {
           actualchildren.push_back(item);
-          resultAttributes = item.second->attributes;
         }
       }
       if (actualchildren.empty()) continue;

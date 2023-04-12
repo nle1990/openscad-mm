@@ -72,7 +72,7 @@ private:
   bool isSmartCached(const AbstractNode& node);
   bool isValidDim(const Geometry::GeometryItem& item, unsigned int& dim) const;
   std::map<Geometry::IrreconcilableAttributes, Geometry::Geometries> collectReconcilableChildGroups(const AbstractNode& node, int dimension = -1);
-  Geometry::Geometries collectChildren3D(const AbstractNode& node);
+  std::pair<std::shared_ptr<const Geometry>, Geometry::Geometries> collectDifferenceChildren3D(const AbstractNode& node);
   std::vector<const class Polygon2d *> collectChildren2D(const AbstractNode& node);
   std::shared_ptr<const Geometry> applyMinkowski2D(const AbstractNode& node);
   std::shared_ptr<const Geometry> applyHull2D(const AbstractNode& node);

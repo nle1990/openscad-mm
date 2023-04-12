@@ -141,18 +141,35 @@ GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren3D(const Abstr
 {
   if(op == OpenSCADOperator::DIFFERENCE)
   {
-    auto children = collectChildren3D(node);
-    Geometry::Attributes resultAttributes;
-    if(children.front().second) {
-      resultAttributes = children.front().second->attributes;
-    } else if(children.front().first) {
-      resultAttributes = children.front().first->getGeometryAttributes(); //FIXME-MM: we should probably not even resort to this, but just look for the first child that does have geometry, since this might ignore attributes set by a child node
-      LOG(message_group::None, Location::NONE, "", "applyToChildren3D: using node attributes due to null-geometry");
-    } else {
-      resultAttributes = Geometry::getDefaultAttributes();
+    auto posAndNegGeometries = collectDifferenceChildren3D(node);
+    auto positiveGeometry = posAndNegGeometries.first;
+    auto toSubtract = posAndNegGeometries.second;
+    if(toSubtract.size() == 0 || !positiveGeometry || positiveGeometry->isEmpty()) {
+      return ResultObject(positiveGeometry);
     }
 
-    return ResultObject(CGALUtils::applyOperator3D(children, op, resultAttributes));
+    if(auto geomlist = dynamic_pointer_cast<const GeometryList>(positiveGeometry)) {
+      Geometry::Geometries positiveGeometries = geomlist->flatten();
+      Geometry::Geometries resultGeometries;
+      for(const auto& item : positiveGeometries)
+      {
+        Geometry::Attributes resultAttributes;
+        if(item.second) {
+          resultAttributes = item.second->attributes;
+        } else {
+          resultAttributes = Geometry::getDefaultAttributes();
+        }
+        auto subtractionGeoms = toSubtract;
+        subtractionGeoms.push_front(std::pair<std::shared_ptr<const AbstractNode>, shared_ptr<const Geometry>>(nullptr, item.second));
+        auto geom = CGALUtils::applyOperator3D(subtractionGeoms, op, resultAttributes);
+        resultGeometries.push_back(std::make_pair(std::shared_ptr<AbstractNode>(), geom));
+      }
+      return ResultObject(new GeometryList(resultGeometries));
+    } else {
+      Geometry::Attributes resultAttributes = positiveGeometry->attributes;
+      toSubtract.push_front(std::pair<std::shared_ptr<const AbstractNode>, shared_ptr<const Geometry>>(nullptr, positiveGeometry));
+      return ResultObject(CGALUtils::applyOperator3D(toSubtract, op, resultAttributes));
+    }
   }
 
   auto childGroups = collectReconcilableChildGroups(node, 3);
@@ -694,9 +711,11 @@ std::map<Geometry::IrreconcilableAttributes, Geometry::Geometries> GeometryEvalu
    Returns a list of 3D Geometry children of the given node.
    May return empty geometries, but not nullptr objects
  */
-Geometry::Geometries GeometryEvaluator::collectChildren3D(const AbstractNode& node)
+std::pair<std::shared_ptr<const Geometry>, Geometry::Geometries> GeometryEvaluator::collectDifferenceChildren3D(const AbstractNode& node)
 {
+  std::shared_ptr<const Geometry> firstChildGeom;
   Geometry::Geometries children;
+  bool firstChildSkipped = false;
   for (const auto& item : this->visitedchildren[node.index()]) {
     auto &chnode = item.first;
     const shared_ptr<const Geometry>& chgeom = item.second;
@@ -707,6 +726,12 @@ Geometry::Geometries GeometryEvaluator::collectChildren3D(const AbstractNode& no
     // cache could have been modified before we reach this point due to a large
     // sibling object.
     smartCacheInsert(*chnode, chgeom);
+
+    if(!firstChildSkipped) {
+      firstChildGeom = item.second;
+      firstChildSkipped = true;
+      continue;
+    }
 
     auto addGeometry = [&](const Geometry::GeometryItem &item) {
       const shared_ptr<const Geometry>& geom = item.second;
@@ -731,7 +756,7 @@ Geometry::Geometries GeometryEvaluator::collectChildren3D(const AbstractNode& no
 
     addGeometry(item);
   }
-  return children;
+  return std::make_pair(firstChildGeom, children);
 }
 
 /*!

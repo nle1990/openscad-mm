@@ -69,7 +69,7 @@ shared_ptr<const Geometry> GeometryEvaluator::evaluateGeometry(const AbstractNod
       this->root = CGALUtils::getGeometryAsPolySet(this->root);
     }
 
-    if (!allownef) { //FIXME-MM: figure out the purpose of allownef, since geometrylists kind of interfere with trying to convert to a polyset here
+    if (!allownef) {
       // We cannot render concave polygons, so tessellate any 3D PolySets
       if(!dynamic_pointer_cast<const GeometryList>(this->root)) { //FIXME-MM: remove again, probably (possibly go through a flattened version of the geometrylist instead and convert to polysets there)
         auto ps = CGALUtils::getGeometryAsPolySet(this->root);

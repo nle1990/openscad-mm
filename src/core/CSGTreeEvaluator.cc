@@ -175,9 +175,18 @@ shared_ptr<CSGNode> CSGTreeEvaluator::evaluateCSGNodeFromGeometry(
   // We cannot render Polygon2d directly, so we preprocess (tessellate) it here
   auto g = geom;
   if (!g->isEmpty()) {
-    auto p2d = dynamic_pointer_cast<const Polygon2d>(geom);
-    if (p2d) {
+    if (auto p2d = dynamic_pointer_cast<const Polygon2d>(geom)) {
       g.reset(p2d->tessellate());
+    } else if(auto geomlist = dynamic_pointer_cast<const GeometryList>(geom)) {
+      Geometry::Geometries geometries = geomlist->flatten();
+      for(auto& item : geometries)
+      {
+        if(!item.second) continue;
+        auto p2d = dynamic_pointer_cast<const Polygon2d>(item.second);
+        if(!p2d) continue;
+        item.second.reset(p2d->tessellate());
+      }
+      g.reset(new GeometryList(geometries));
     }
     // 3D PolySets are tessellated before inserting into Geometry cache, inside GeometryEvaluator::evaluateGeometry
   }

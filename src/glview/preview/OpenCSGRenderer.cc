@@ -38,7 +38,7 @@ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   OpenCSGPrim(OpenCSG::Operation operation, unsigned int convexity, const OpenCSGRenderer& renderer) :
     OpenCSG::Primitive(operation, convexity), csgmode(Renderer::CSGMODE_NONE), renderer(renderer) { }
-  std::shared_ptr<const PolySet> geom;
+  std::shared_ptr<const Geometry> geom;
   Transform3d m;
   Renderer::csgmode_e csgmode;
 
@@ -46,7 +46,17 @@ public:
     if (geom) {
       glPushMatrix();
       glMultMatrixd(m.data());
-      renderer.render_surface(*geom, csgmode, m);
+      if (std::shared_ptr<const PolySet> ps = dynamic_pointer_cast<const PolySet>(geom)) {
+        renderer.render_surface(*ps, csgmode, m);
+      } else if (std::shared_ptr<const GeometryList> geomlist = dynamic_pointer_cast<const GeometryList>(geom)) {
+        for(auto& item : geomlist->flatten()) {
+          if (!item.second) continue;
+
+          if (std::shared_ptr<const PolySet> ps = dynamic_pointer_cast<const PolySet>(item.second)) {
+            renderer.render_surface(*ps, csgmode, m);
+          }
+        }
+      }
       glPopMatrix();
     }
   }
@@ -79,7 +89,6 @@ OpenCSGRenderer::OpenCSGRenderer(std::shared_ptr<CSGProducts> root_products,
   highlights_products(highlights_products),
   background_products(background_products)
 {
-  LOG(message_group::None, Location::NONE, "", "OpenCSGRenderer constructed");
 }
 
 void OpenCSGRenderer::prepare(bool /*showfaces*/, bool showedges, const shaderinfo_t *shaderinfo)
@@ -120,9 +129,10 @@ void OpenCSGRenderer::draw(bool /*showfaces*/, bool showedges, const shaderinfo_
 OpenCSGPrim *OpenCSGRenderer::createCSGPrimitive(const CSGChainObject& csgobj, OpenCSG::Operation operation, bool highlight_mode, bool background_mode, OpenSCADOperator type) const
 {
   OpenCSGPrim *prim = new OpenCSGPrim(operation, csgobj.leaf->geom->getConvexity(), *this);
-  std::shared_ptr<const PolySet> ps = dynamic_pointer_cast<const PolySet>(csgobj.leaf->geom);
-  if (ps) {
+  if (std::shared_ptr<const PolySet> ps = dynamic_pointer_cast<const PolySet>(csgobj.leaf->geom)) {
     prim->geom = ps;
+  } else if(std::shared_ptr<const GeometryList> geomlist = dynamic_pointer_cast<const GeometryList>(csgobj.leaf->geom)) {
+    prim->geom = geomlist;
   }
   prim->m = csgobj.leaf->matrix;
   prim->csgmode = get_csgmode(highlight_mode, background_mode, type);
@@ -209,11 +219,8 @@ void OpenCSGRenderer::createCSGProducts(const CSGProducts& products, const Rende
     }
 
     for (const auto& csgobj : product.intersections) {
-      if (csgobj.leaf->geom) {
-        const PolySet *ps = dynamic_cast<const PolySet *>(csgobj.leaf->geom.get());
-        if (!ps) continue;
-
-        const Color4f& c = csgobj.leaf->color;
+      auto handleIntersectionPolySet = [&](const PolySet * ps) {
+        const Color4f& c = ps->attributes.color;
         csgmode_e csgmode = get_csgmode(highlight_mode, background_mode);
 
         ColorMode colormode = ColorMode::NONE;
@@ -249,7 +256,7 @@ void OpenCSGRenderer::createCSGProducts(const CSGProducts& products, const Rende
             surface->csgObjectIndex(csgobj.leaf->index);
             primitives->emplace_back(createVBOPrimitive(surface,
                                                         OpenCSG::Intersection,
-                                                        csgobj.leaf->geom->getConvexity()));
+                                                        ps->getConvexity()));
           }
         } else {
           // object is transparent, so draw rear faces first.  Issue #1496
@@ -270,7 +277,7 @@ void OpenCSGRenderer::createCSGProducts(const CSGProducts& products, const Rende
 
             primitives->emplace_back(createVBOPrimitive(surface,
                                                         OpenCSG::Intersection,
-                                                        csgobj.leaf->geom->getConvexity()));
+                                                        ps->getConvexity()));
 
             cull = std::make_shared<VertexState>();
             cull->glBegin().emplace_back([]() {
@@ -289,14 +296,32 @@ void OpenCSGRenderer::createCSGProducts(const CSGProducts& products, const Rende
             assert(false && "Intersection surface state was nullptr");
           }
         }
+      };
+
+      if (csgobj.leaf->geom) {
+        if (const PolySet *ps = dynamic_cast<const PolySet *>(csgobj.leaf->geom.get())) {
+          handleIntersectionPolySet(ps);
+        } else if(const GeometryList *geomlist = dynamic_cast<const GeometryList *>(csgobj.leaf->geom.get())) {
+          for(auto& item : geomlist->flatten()) {
+            if(!item.second) {
+              continue;
+            }
+            if (const PolySet *ps = dynamic_cast<const PolySet *>(item.second.get())) {
+              handleIntersectionPolySet(ps);
+            }
+          }
+        } else if( csgobj.leaf->geom) {
+          LOG(message_group::None, Location::NONE, "", "createCSGProducts/intersections: ignoring geometry due to type: '%1$s'", csgobj.leaf->geom->toString()); //FIXME-MM: remove
+        }
+
       }
     }
 
+
     for (const auto& csgobj : product.subtractions) {
-      if (csgobj.leaf->geom) {
-        const PolySet *ps = dynamic_cast<const PolySet *>(csgobj.leaf->geom.get());
-        if (!ps) continue;
-        const Color4f& c = csgobj.leaf->color;
+
+      auto handleSubtractionPolySet = [&](const PolySet * ps) {
+        const Color4f& c = ps->attributes.color;
         csgmode_e csgmode = get_csgmode(highlight_mode, background_mode, OpenSCADOperator::DIFFERENCE);
 
         ColorMode colormode = ColorMode::NONE;
@@ -340,7 +365,7 @@ void OpenCSGRenderer::createCSGProducts(const CSGProducts& products, const Rende
           surface->csgObjectIndex(csgobj.leaf->index);
           primitives->emplace_back(createVBOPrimitive(surface,
                                                       OpenCSG::Subtraction,
-                                                      csgobj.leaf->geom->getConvexity()));
+                                                      ps->getConvexity()));
         } else {
           assert(false && "Subtraction surface state was nullptr");
         }
@@ -350,6 +375,24 @@ void OpenCSGRenderer::createCSGProducts(const CSGProducts& products, const Rende
           GL_TRACE0("glDisable(GL_CULL_FACE)"); glDisable(GL_CULL_FACE);
         }); GL_ERROR_CHECK();
         vertex_states->emplace_back(std::move(cull));
+      };
+
+      if (csgobj.leaf->geom) {
+        if (const PolySet *ps = dynamic_cast<const PolySet *>(csgobj.leaf->geom.get())) {
+          handleSubtractionPolySet(ps);
+        } else if(const GeometryList *geomlist = dynamic_cast<const GeometryList *>(csgobj.leaf->geom.get())) {
+          for(auto& item : geomlist->flatten()) {
+            if(!item.second) {
+              continue;
+            }
+            if (const PolySet *ps = dynamic_cast<const PolySet *>(item.second.get())) {
+              handleSubtractionPolySet(ps);
+            }
+          }
+        } else if(csgobj.leaf->geom) {
+          LOG(message_group::None, Location::NONE, "", "createCSGProducts/subtraction: ignoring geometry due to type: '%1$s'", csgobj.leaf->geom->toString()); //FIXME-MM: remove
+        }
+
       }
     }
 
@@ -395,73 +438,102 @@ void OpenCSGRenderer::renderCSGProducts(const std::shared_ptr<CSGProducts>& prod
       }
 
       for (const auto& csgobj : product.intersections) {
-        const PolySet *ps = dynamic_cast<const PolySet *>(csgobj.leaf->geom.get());
-        if (!ps) continue;
+        auto handleIntersectionPolySet = [&](const PolySet * ps) {
+          if (shaderinfo && shaderinfo->type == Renderer::SELECT_RENDERING) {
+            int identifier = csgobj.leaf->index;
+            glUniform3f(shaderinfo->data.select_rendering.identifier,
+                        ((identifier >> 0) & 0xff) / 255.0f, ((identifier >> 8) & 0xff) / 255.0f,
+                        ((identifier >> 16) & 0xff) / 255.0f); GL_ERROR_CHECK();
+          }
 
-        if (shaderinfo && shaderinfo->type == Renderer::SELECT_RENDERING) {
-          int identifier = csgobj.leaf->index;
-          glUniform3f(shaderinfo->data.select_rendering.identifier,
-                      ((identifier >> 0) & 0xff) / 255.0f, ((identifier >> 8) & 0xff) / 255.0f,
-                      ((identifier >> 16) & 0xff) / 255.0f); GL_ERROR_CHECK();
+          const Color4f& c = ps->attributes.color;
+          csgmode_e csgmode = get_csgmode(highlight_mode, background_mode);
+
+          ColorMode colormode = ColorMode::NONE;
+          if (highlight_mode) {
+            colormode = ColorMode::HIGHLIGHT;
+          } else if (background_mode) {
+            colormode = ColorMode::BACKGROUND;
+          } else {
+            colormode = ColorMode::MATERIAL;
+          }
+
+          glPushMatrix();
+          glMultMatrixd(csgobj.leaf->matrix.data());
+
+          const Color4f color = setColor(colormode, c.data(), shaderinfo);
+          if (color[3] == 1.0f) {
+            // object is opaque, draw normally
+            render_surface(*ps, csgmode, csgobj.leaf->matrix, shaderinfo);
+          } else {
+            // object is transparent, so draw rear faces first.  Issue #1496
+            glEnable(GL_CULL_FACE);
+            glCullFace(GL_FRONT);
+            render_surface(*ps, csgmode, csgobj.leaf->matrix, shaderinfo);
+            glCullFace(GL_BACK);
+            render_surface(*ps, csgmode, csgobj.leaf->matrix, shaderinfo);
+            glDisable(GL_CULL_FACE);
+          }
+
+          glPopMatrix();
+        };
+
+        if (const PolySet *ps = dynamic_cast<const PolySet *>(csgobj.leaf->geom.get())) {
+          handleIntersectionPolySet(ps);
+        } else if(const GeometryList *geomlist = dynamic_cast<const GeometryList *>(csgobj.leaf->geom.get())) {
+          for(auto& item : geomlist->flatten()) {
+            if(!item.second) {
+              continue;
+            }
+            if (const PolySet *ps = dynamic_cast<const PolySet *>(item.second.get())) {
+              handleIntersectionPolySet(ps);
+            }
+          }
+        } else if( csgobj.leaf->geom) {
+          LOG(message_group::None, Location::NONE, "", "renderCSGProducts/intersection: ignoring geometry due to type: '%1$s'", csgobj.leaf->geom->toString()); //FIXME-MM: remove
         }
+      }
 
-        const Color4f& c = csgobj.leaf->color;
-        csgmode_e csgmode = get_csgmode(highlight_mode, background_mode);
+      for (const auto& csgobj : product.subtractions) {
+        auto handleSubtractionPolySet = [&](const PolySet * ps) {
+          const Color4f& c = ps->attributes.color;
+          csgmode_e csgmode = get_csgmode(highlight_mode, background_mode, OpenSCADOperator::DIFFERENCE);
 
-        ColorMode colormode = ColorMode::NONE;
-        if (highlight_mode) {
-          colormode = ColorMode::HIGHLIGHT;
-        } else if (background_mode) {
-          colormode = ColorMode::BACKGROUND;
-        } else {
-          colormode = ColorMode::MATERIAL;
-        }
+          ColorMode colormode = ColorMode::NONE;
+          if (highlight_mode) {
+            colormode = ColorMode::HIGHLIGHT;
+          } else if (background_mode) {
+            colormode = ColorMode::BACKGROUND;
+          } else {
+            colormode = ColorMode::CUTOUT;
+          }
 
-        glPushMatrix();
-        glMultMatrixd(csgobj.leaf->matrix.data());
-
-        const Color4f color = setColor(colormode, c.data(), shaderinfo);
-        if (color[3] == 1.0f) {
-          // object is opaque, draw normally
-          render_surface(*ps, csgmode, csgobj.leaf->matrix, shaderinfo);
-        } else {
-          // object is transparent, so draw rear faces first.  Issue #1496
+          (void) setColor(colormode, c.data(), shaderinfo);
+          glPushMatrix();
+          glMultMatrixd(csgobj.leaf->matrix.data());
+          // negative objects should only render rear faces
           glEnable(GL_CULL_FACE);
           glCullFace(GL_FRONT);
           render_surface(*ps, csgmode, csgobj.leaf->matrix, shaderinfo);
-          glCullFace(GL_BACK);
-          render_surface(*ps, csgmode, csgobj.leaf->matrix, shaderinfo);
           glDisable(GL_CULL_FACE);
+
+          glPopMatrix();
+        };
+
+        if (const PolySet *ps = dynamic_cast<const PolySet *>(csgobj.leaf->geom.get())) {
+          handleSubtractionPolySet(ps);
+        } else if(const GeometryList *geomlist = dynamic_cast<const GeometryList *>(csgobj.leaf->geom.get())) {
+          for(auto& item : geomlist->flatten()) {
+            if(!item.second) {
+              continue;
+            }
+            if (const PolySet *ps = dynamic_cast<const PolySet *>(item.second.get())) {
+              handleSubtractionPolySet(ps);
+            }
+          }
+        } else if( csgobj.leaf->geom) {
+          LOG(message_group::None, Location::NONE, "", "renderCSGProducts/subtraction: ignoring geometry due to type: '%1$s'", csgobj.leaf->geom->toString()); //FIXME-MM: remove
         }
-
-        glPopMatrix();
-      }
-      for (const auto& csgobj : product.subtractions) {
-        const PolySet *ps = dynamic_cast<const PolySet *>(csgobj.leaf->geom.get());
-        if (!ps) continue;
-
-        const Color4f& c = csgobj.leaf->color;
-        csgmode_e csgmode = get_csgmode(highlight_mode, background_mode, OpenSCADOperator::DIFFERENCE);
-
-        ColorMode colormode = ColorMode::NONE;
-        if (highlight_mode) {
-          colormode = ColorMode::HIGHLIGHT;
-        } else if (background_mode) {
-          colormode = ColorMode::BACKGROUND;
-        } else {
-          colormode = ColorMode::CUTOUT;
-        }
-
-        (void) setColor(colormode, c.data(), shaderinfo);
-        glPushMatrix();
-        glMultMatrixd(csgobj.leaf->matrix.data());
-        // negative objects should only render rear faces
-        glEnable(GL_CULL_FACE);
-        glCullFace(GL_FRONT);
-        render_surface(*ps, csgmode, csgobj.leaf->matrix, shaderinfo);
-        glDisable(GL_CULL_FACE);
-
-        glPopMatrix();
       }
 
       if (shaderinfo) glUseProgram(0);

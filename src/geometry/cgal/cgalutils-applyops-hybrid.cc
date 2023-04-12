@@ -18,10 +18,8 @@ namespace CGALUtils {
 shared_ptr<CGALHybridPolyhedron> applyUnion3DHybrid(
   const Geometry::Geometries::const_iterator& chbegin,
   const Geometry::Geometries::const_iterator& chend,
-  Geometry::Attributes attr)  //FIXME-MM: possibly just check children for being the same and special union treatment
-//Also, if you change this back, you need to also change the declaration in cgalutils.h
+  Geometry::Attributes attr)
 {
-  //FIXME-MM also this source needs to be modified in general, i think it unduely combines stuff
   LOG(message_group::None, Location::NONE, "", "applyUnion3DHybrid called");
   typedef std::pair<shared_ptr<CGALHybridPolyhedron>, int> QueueItem;
   struct QueueItemGreater {
@@ -51,6 +49,7 @@ shared_ptr<CGALHybridPolyhedron> applyUnion3DHybrid(
       if (!poly) {
         continue;
       }
+      poly->setAttributes(attr);
 
       auto node_mark = item.first ? item.first->progress_mark : -1;
       queueItems.emplace_back(poly, node_mark);
@@ -87,10 +86,8 @@ shared_ptr<CGALHybridPolyhedron> applyUnion3DHybrid(
    Applies op to all children and returns the result.
    The child list should be guaranteed to contain non-NULL 3D or empty Geometry objects
  */
-shared_ptr<CGALHybridPolyhedron> applyOperator3DHybrid(const Geometry::Geometries& children, OpenSCADOperator op, Geometry::Attributes attr)  //FIXME-MM: possibly just check children for being the same and error out if they are not instead of second param here
-//Also, if you change this back, you need to also change the declaration in cgalutils.h
+shared_ptr<CGALHybridPolyhedron> applyOperator3DHybrid(const Geometry::Geometries& children, OpenSCADOperator op, Geometry::Attributes attr)
 {
-  //FIXME-MM: actually use attr, I'm sure we need it here, and check in general if this needs to be changed in the face of different types of children
   LOG(message_group::None, Location::NONE, "", "applyOperator3DHybrid called");
   shared_ptr<CGALHybridPolyhedron> N;
 
@@ -142,6 +139,11 @@ shared_ptr<CGALHybridPolyhedron> applyOperator3DHybrid(const Geometry::Geometrie
     LOG(message_group::Error, Location::NONE, "", "CGAL error in CGALUtils::applyOperator3DHybrid %1$s: %2$s", opstr, e.what());
 
   }
+
+  if(N) {
+    N->setAttributes(attr);
+  }
+
   return N;
 }
 

@@ -82,6 +82,10 @@ public:
     attributes.partName = part;
   }
 
+  virtual void setAttributes(Geometry::Attributes attr) {
+    attributes = attr;
+  }
+
 protected:
   int convexity;
 };
@@ -129,6 +133,7 @@ public:
   void setColor(Color4f color) override;
   void setMaterial(std::string material) override;
   void setPart(std::string part) override;
+  void setAttributes(Geometry::Attributes attr) override;
 
   const Geometries& getChildren() const {
     return this->children;

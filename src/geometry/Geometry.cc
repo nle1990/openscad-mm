@@ -138,6 +138,18 @@ void GeometryList::setPart(std::string part) {
   }
 }
 
+void GeometryList::setAttributes(Geometry::Attributes attr) {
+  if (this->isEmpty()) return;
+
+  for (auto& item : this->children)
+  {
+    if(!item.second) continue;
+    Geometry* geom = item.second->copy();
+    geom->setAttributes(attr);
+    item.second.reset(geom);
+  }
+}
+
 void flatten(const GeometryList& geomlist, GeometryList::Geometries& childlist)
 {
   for (const auto& item : geomlist.getChildren()) {

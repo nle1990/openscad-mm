@@ -57,6 +57,7 @@ shared_ptr<const Geometry> applyOperator3D(const Geometry::Geometries& children,
       if (!foundFirst) {
         if (chN) {
           N = new CGAL_Nef_polyhedron(*chN);
+          N->setAttributes(attr);
         } else { // first child geometry might be empty/null
           N = nullptr;
         }

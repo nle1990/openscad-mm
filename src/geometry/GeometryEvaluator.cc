@@ -70,9 +70,8 @@ shared_ptr<const Geometry> GeometryEvaluator::evaluateGeometry(const AbstractNod
     }
 
     if (!allownef) {
-      // We cannot render concave polygons, so tessellate any 3D PolySets
-      if(!dynamic_pointer_cast<const GeometryList>(this->root)) { //FIXME-MM: remove again, probably (possibly go through a flattened version of the geometrylist instead and convert to polysets there)
-        auto ps = CGALUtils::getGeometryAsPolySet(this->root);
+      auto toPolySet = [&](std::shared_ptr<const Geometry> geom) -> Geometry * {
+        auto ps = CGALUtils::getGeometryAsPolySet(geom);
         if (ps && !ps->isEmpty()) {
           // Since is_convex() doesn't handle non-planar faces, we need to tessellate
           // also in the indeterminate state so we cannot just use a boolean comparison. See #1061
@@ -82,8 +81,27 @@ shared_ptr<const Geometry> GeometryEvaluator::evaluateGeometry(const AbstractNod
             auto ps_tri = new PolySet(3, ps->attributes, ps->convexValue());
             ps_tri->setConvexity(ps->getConvexity());
             PolySetUtils::tessellate_faces(*ps, *ps_tri);
-            this->root.reset(ps_tri);
+            return ps_tri;
           }
+        }
+        return nullptr;
+      };
+      // We cannot render concave polygons, so tessellate any 3D PolySets
+      if(std::shared_ptr<const GeometryList> geomlist = dynamic_pointer_cast<const GeometryList>(this->root)) {
+        Geometry::Geometries geometries = geomlist->flatten();
+        for(auto& item : geometries)
+        {
+          if(!item.second) continue;
+          Geometry *ps_tri = toPolySet(item.second);
+          if(ps_tri) {
+            item.second.reset(ps_tri);
+          }
+        }
+        this->root.reset(new GeometryList(geometries));
+      } else {
+        Geometry *ps_tri = toPolySet(this->root);
+        if(ps_tri) {
+          this->root.reset(ps_tri);
         }
       }
     }

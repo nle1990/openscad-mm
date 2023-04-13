@@ -138,6 +138,22 @@ void GeometryList::setPart(std::string part) {
   }
 }
 
+unsigned int GeometryList::getConvexity() const {
+  if (this->isEmpty()) return this->convexity;
+
+  int maxConvexity = this->convexity;
+
+  for (auto& item : this->children)
+  {
+    if(!item.second) continue;
+    int childConvexity = item.second->getConvexity();
+    if(childConvexity > maxConvexity) maxConvexity = childConvexity;
+  }
+
+  return maxConvexity;
+}
+
+
 void GeometryList::setAttributes(Geometry::Attributes attr) {
   if (this->isEmpty()) return;
 

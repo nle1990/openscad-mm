@@ -46,7 +46,7 @@ public:
   virtual Geometry *copy() const = 0;
   virtual size_t numFacets() const = 0;
 
-  unsigned int getConvexity() const { return convexity; }
+  virtual unsigned int getConvexity() const { return convexity; }
   void setConvexity(int c) { this->convexity = c; }
 
   virtual void transform(const Transform3d& mat) { assert(!"transform not implemented!"); }
@@ -134,6 +134,7 @@ public:
   void setMaterial(std::string material) override;
   void setPart(std::string part) override;
   void setAttributes(Geometry::Attributes attr) override;
+  unsigned int getConvexity() const override;
 
   const Geometries& getChildren() const {
     return this->children;

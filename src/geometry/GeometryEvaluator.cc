@@ -157,17 +157,29 @@ GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren3D(const Abstr
         if(item.second) {
           resultAttributes = item.second->attributes;
         } else {
-          resultAttributes = Geometry::getDefaultAttributes();
+          continue;
         }
+
+        if(item.second->getDimension() != 3) continue;
+
         auto subtractionGeoms = toSubtract;
-        subtractionGeoms.push_front(std::pair<std::shared_ptr<const AbstractNode>, shared_ptr<const Geometry>>(nullptr, item.second));
+        subtractionGeoms.push_front(item);
         auto geom = CGALUtils::applyOperator3D(subtractionGeoms, op, resultAttributes);
         resultGeometries.push_back(std::make_pair(std::shared_ptr<AbstractNode>(), geom));
       }
+
+      if(resultGeometries.size() == 0) {
+        return ResultObject();
+      }
+
+      if(resultGeometries.size() == 1) {
+        return ResultObject(resultGeometries.front().second);
+      }
+
       return ResultObject(new GeometryList(resultGeometries));
     } else {
       Geometry::Attributes resultAttributes = positiveGeometry->attributes;
-      toSubtract.push_front(std::pair<std::shared_ptr<const AbstractNode>, shared_ptr<const Geometry>>(nullptr, positiveGeometry));
+      toSubtract.push_front(std::pair<shared_ptr<const AbstractNode>, shared_ptr<const Geometry>>(nullptr, positiveGeometry));
       return ResultObject(CGALUtils::applyOperator3D(toSubtract, op, resultAttributes));
     }
   }
@@ -532,9 +544,11 @@ std::shared_ptr<const Geometry> GeometryEvaluator::applyMinkowski2D(const Abstra
    Returns a list of Polygon2d children of the given node.
    May return empty Polygon2d object, but not nullptr objects
  */
-std::vector<const class Polygon2d *> GeometryEvaluator::collectChildren2D(const AbstractNode& node)
+std::pair<std::shared_ptr<const Geometry>, Geometry::Geometries> GeometryEvaluator::collectDifferenceChildren2D(const AbstractNode& node)
 {
-  std::vector<const Polygon2d *> children;
+  std::shared_ptr<const Geometry> firstChildGeom;
+  Geometry::Geometries children;
+  bool firstChildSkipped = false;
   for (const auto& item : this->visitedchildren[node.index()]) {
     auto &chnode = item.first;
     const shared_ptr<const Geometry>& chgeom = item.second;
@@ -546,23 +560,28 @@ std::vector<const class Polygon2d *> GeometryEvaluator::collectChildren2D(const 
     // sibling object.
     smartCacheInsert(*chnode, chgeom);
 
+    if(!firstChildSkipped) {
+      firstChildGeom = item.second;
+      firstChildSkipped = true;
+      continue;
+    }
+
     auto addGeometry = [&](const Geometry::GeometryItem &item) {
       const shared_ptr<const Geometry>& geom = item.second;
       if (geom) {
         if (geom->getDimension() == 3) {
           LOG(message_group::Warning, item.first->modinst->location(), this->tree.getDocumentPath(), "Ignoring 3D child object for 2D operation");
-          children.push_back(nullptr); // replace 3D geometry with empty geometry
+          children.push_back(std::make_pair(item.first, nullptr)); // replace 3D geometry with empty geometry
         } else {
           if (geom->isEmpty()) {
-            children.push_back(nullptr);
+            children.push_back(std::make_pair(item.first, nullptr));
           } else {
-            const Polygon2d *polygons = dynamic_cast<const Polygon2d *>(geom.get());
-            assert(polygons);
-            children.push_back(polygons);
+            assert(dynamic_pointer_cast<const Polygon2d>(item.second));
+            children.push_back(item);
           }
         }
       } else {
-        children.push_back(nullptr);
+        children.push_back(item);
       }
     };
 
@@ -578,7 +597,7 @@ std::vector<const class Polygon2d *> GeometryEvaluator::collectChildren2D(const 
 
     addGeometry(item);
   }
-  return children;
+  return std::make_pair(firstChildGeom, children);
 }
 
 /*!
@@ -772,27 +791,55 @@ std::shared_ptr<const Geometry> GeometryEvaluator::applyToChildren2D(const Abstr
   } else if (op == OpenSCADOperator::FILL) {
     return applyFill2D(node);
   } else if (op == OpenSCADOperator::DIFFERENCE) {
-    auto children = collectChildren2D(node);
-    if(children.size() == 1) {
-      if(!children.front()) {
+    auto posAndNegGeometries = collectDifferenceChildren2D(node);
+    auto positiveGeometry = posAndNegGeometries.first;
+    auto toSubtract = posAndNegGeometries.second;
+    if(!positiveGeometry) {
+      return nullptr;
+    }
+
+    if(toSubtract.size() == 0 || positiveGeometry->isEmpty()) {
+      return positiveGeometry;
+    }
+
+    ClipperLib::ClipType clipType = ClipperLib::ctDifference;
+    if(auto geomlist = dynamic_pointer_cast<const GeometryList>(positiveGeometry)) {
+      Geometry::Geometries positiveGeometries = geomlist->flatten();
+      Geometry::Geometries resultGeometries;
+      for(const auto& item : positiveGeometries)
+      {
+        Geometry::Attributes resultAttributes;
+        if(item.second) {
+          resultAttributes = item.second->attributes;
+        } else {
+          continue;
+        }
+        auto subtractionGeoms = toSubtract;
+        auto poly = dynamic_pointer_cast<const Polygon2d>(item.second);
+        if(!poly) continue;
+
+        subtractionGeoms.push_front(item);
+        auto geom = ClipperUtils::apply(subtractionGeoms, clipType, resultAttributes);
+        resultGeometries.push_back(std::make_pair(std::shared_ptr<AbstractNode>(), std::shared_ptr<const Geometry>(geom)));
+      }
+
+      if(resultGeometries.size() == 0) {
         return nullptr;
       }
-      auto poly = children.front();
-      return std::shared_ptr<const Geometry>(new Polygon2d(*poly));
-    }
-    ClipperLib::ClipType clipType = ClipperLib::ctDifference;
 
-    Geometry::Attributes resultAttributes;
-    // we might have a node with no geometry (e.g. for 2d geometries), or
-    // a geometry with no node (e.g. a child of a GeometryList from a previous hull operation), but never neither
-    if(children.front()) {
-      resultAttributes = children.front()->attributes;
+      if(resultGeometries.size() == 1) {
+        return resultGeometries.front().second;
+      }
+
+      return std::shared_ptr<const Geometry>(new GeometryList(resultGeometries));
     } else {
-      //if there is no geometry for the first child, the attributes don't matter anyway
-      resultAttributes = Geometry::getDefaultAttributes();
+      auto poly = dynamic_pointer_cast<const Polygon2d>(positiveGeometry);
+      if(!poly) {
+        return nullptr;
+      }
+      toSubtract.push_front(std::pair<shared_ptr<const AbstractNode>, shared_ptr<const Geometry>>(nullptr, positiveGeometry));
+      return std::shared_ptr<const Geometry>(ClipperUtils::apply(toSubtract, clipType, positiveGeometry->attributes));
     }
-
-    return std::shared_ptr<const Geometry>(ClipperUtils::apply(children, clipType, resultAttributes));
   }
 
   auto childGroups = collectReconcilableChildGroups(node, 2);

@@ -966,6 +966,13 @@ Response GeometryEvaluator::visit(State& state, const ColorNode& node)
     } else {
       geom = smartCacheGet(node, state.preferNef());
     }
+
+    if(!geom) {
+      addToParent(state, node, geom);
+      node.progress_report();
+      return Response::ContinueTraversal;
+    }
+
     Geometry *geom_copy = geom->copy();
     geom_copy->setColor(node.color);
     addToParent(state, node, shared_ptr<const class Geometry>(geom_copy));
@@ -989,6 +996,13 @@ Response GeometryEvaluator::visit(State& state, const PartNode& node)
     } else {
       geom = smartCacheGet(node, state.preferNef());
     }
+
+    if(!geom) {
+      addToParent(state, node, geom);
+      node.progress_report();
+      return Response::ContinueTraversal;
+    }
+
     Geometry *geom_copy = geom->copy();
     geom_copy->setPart(node.partName);
     addToParent(state, node, shared_ptr<const class Geometry>(geom_copy));
@@ -1012,6 +1026,13 @@ Response GeometryEvaluator::visit(State& state, const MaterialNode& node)
     } else {
       geom = smartCacheGet(node, state.preferNef());
     }
+
+    if(!geom) {
+      addToParent(state, node, geom);
+      node.progress_report();
+      return Response::ContinueTraversal;
+    }
+
     Geometry *geom_copy = geom->copy();
     geom_copy->setMaterial(node.materialName);
     addToParent(state, node, shared_ptr<const class Geometry>(geom_copy));

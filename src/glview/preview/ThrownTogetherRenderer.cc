@@ -153,35 +153,47 @@ void ThrownTogetherRenderer::renderChainObject(const CSGChainObject& csgobj, boo
                                                bool highlight_mode, bool background_mode,
                                                bool fberror, OpenSCADOperator type) const
 {
-  if (this->geomVisitMark[std::make_pair(csgobj.leaf->geom.get(), &csgobj.leaf->matrix)]++ > 0) return;
-  const PolySet *ps = dynamic_cast<const PolySet *>(csgobj.leaf->geom.get());
-  if (!ps) return;
+  auto renderPolySet = [&](const PolySet *ps) {
+    const Color4f& c = csgobj.leaf->color;
+    csgmode_e csgmode = get_csgmode(highlight_mode, background_mode, type);
+    ColorMode colormode = ColorMode::NONE;
+    ColorMode edge_colormode = ColorMode::NONE;
 
-  const Color4f& c = csgobj.leaf->color;
-  csgmode_e csgmode = get_csgmode(highlight_mode, background_mode, type);
-  ColorMode colormode = ColorMode::NONE;
-  ColorMode edge_colormode = ColorMode::NONE;
+    colormode = getColorMode(csgobj.flags, highlight_mode, background_mode, fberror, type);
+    const Transform3d& m = csgobj.leaf->matrix;
 
-  colormode = getColorMode(csgobj.flags, highlight_mode, background_mode, fberror, type);
-  const Transform3d& m = csgobj.leaf->matrix;
+    if (shaderinfo && shaderinfo->type == Renderer::SELECT_RENDERING) {
+      int identifier = csgobj.leaf->index;
+      glUniform3f(shaderinfo->data.select_rendering.identifier, ((identifier >> 0) & 0xff) / 255.0f,
+                  ((identifier >> 8) & 0xff) / 255.0f, ((identifier >> 16) & 0xff) / 255.0f);
+    } else {
+      setColor(colormode, c.data());
+    }
+    glPushMatrix();
+    glMultMatrixd(m.data());
+    render_surface(*ps, csgmode, m, shaderinfo);
+    // only use old render_edges if there is no shader progid
+    if (showedges && (shaderinfo && shaderinfo->progid == 0)) {
+      // FIXME? glColor4f((c[0]+1)/2, (c[1]+1)/2, (c[2]+1)/2, 1.0);
+      setColor(edge_colormode);
+      render_edges(*ps, csgmode);
+    }
+    glPopMatrix();
+  };
 
-  if (shaderinfo && shaderinfo->type == Renderer::SELECT_RENDERING) {
-    int identifier = csgobj.leaf->index;
-    glUniform3f(shaderinfo->data.select_rendering.identifier, ((identifier >> 0) & 0xff) / 255.0f,
-                ((identifier >> 8) & 0xff) / 255.0f, ((identifier >> 16) & 0xff) / 255.0f);
-  } else {
-    setColor(colormode, c.data());
+  if(const PolySet *ps = dynamic_cast<const PolySet *>(csgobj.leaf->geom.get()))
+  {
+    renderPolySet(ps);
+  } else if(const GeometryList *geomlist = dynamic_cast<const GeometryList *>(csgobj.leaf->geom.get())) {
+    Geometry::Geometries geometries = geomlist->flatten();
+    for(auto& item : geometries) {
+      if(!item.second) continue;
+      if(const PolySet *ps = dynamic_cast<const PolySet *>(item.second.get()))
+      {
+        renderPolySet(ps);
+      }
+    }
   }
-  glPushMatrix();
-  glMultMatrixd(m.data());
-  render_surface(*ps, csgmode, m, shaderinfo);
-  // only use old render_edges if there is no shader progid
-  if (showedges && (shaderinfo && shaderinfo->progid == 0)) {
-    // FIXME? glColor4f((c[0]+1)/2, (c[1]+1)/2, (c[2]+1)/2, 1.0);
-    setColor(edge_colormode);
-    render_edges(*ps, csgmode);
-  }
-  glPopMatrix();
 }
 
 void ThrownTogetherRenderer::renderCSGProducts(const std::shared_ptr<CSGProducts>& products, bool showedges,
@@ -232,12 +244,11 @@ void ThrownTogetherRenderer::createChainObject(VertexArray& vertex_array,
                                                const class CSGChainObject& csgobj, bool highlight_mode,
                                                  bool background_mode, OpenSCADOperator type)
 {
-  if (csgobj.leaf->geom) {
-    const PolySet *ps = dynamic_cast<const PolySet *>(csgobj.leaf->geom.get());
-    if (!ps) return;
+  if (!csgobj.leaf->geom) {
+    return;
+  }
 
-    if (this->geomVisitMark[std::make_pair(csgobj.leaf->geom.get(), &csgobj.leaf->matrix)]++ > 0) return;
-
+  auto createChainObjectFromPolySet = [&](const PolySet *ps) {
     Color4f color;
     Color4f& leaf_color = csgobj.leaf->color;
     csgmode_e csgmode = get_csgmode(highlight_mode, background_mode, type);
@@ -324,7 +335,23 @@ void ThrownTogetherRenderer::createChainObject(VertexArray& vertex_array,
         GL_TRACE0("glDisable(GL_CULL_FACE)"); glDisable(GL_CULL_FACE); GL_ERROR_CHECK();
       });
     }
+  };
+
+  if(const PolySet *ps = dynamic_cast<const PolySet *>(csgobj.leaf->geom.get())) {
+    createChainObjectFromPolySet(ps);
+  } else if(const GeometryList *geomlist = dynamic_cast<const GeometryList *>(csgobj.leaf->geom.get())) {
+    Geometry::Geometries geometries = geomlist->flatten();
+    for(auto& item : geometries) {
+      if(!item.second) continue;
+      if(const PolySet *ps = dynamic_cast<const PolySet *>(item.second.get()))
+      {
+        createChainObjectFromPolySet(ps);
+      }
+    }
   }
+  else return;
+
+  if (this->geomVisitMark[std::make_pair(csgobj.leaf->geom.get(), &csgobj.leaf->matrix)]++ > 0) return;
 }
 
 void ThrownTogetherRenderer::createCSGProducts(const CSGProducts& products, VertexArray& vertex_array,

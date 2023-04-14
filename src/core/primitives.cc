@@ -134,7 +134,7 @@ public:
 
 const Geometry *CubeNode::createGeometry() const
 {
-  auto p = new PolySet(3, this->getGeometryAttributes(), true);
+  auto p = new PolySet(3, Geometry::Attributes{}, true);
   if (
     this->x <= 0 || !std::isfinite(this->x)
     || this->y <= 0 || !std::isfinite(this->y)
@@ -258,7 +258,7 @@ public:
 
 const Geometry *SphereNode::createGeometry() const
 {
-  auto p = new PolySet(3, this->getGeometryAttributes(), true);
+  auto p = new PolySet(3, Geometry::Attributes{}, true);
   if (this->r <= 0 || !std::isfinite(this->r)) {
     return p;
   }
@@ -382,7 +382,7 @@ public:
 
 const Geometry *CylinderNode::createGeometry() const
 {
-  auto p = new PolySet(3, this->getGeometryAttributes(), true);
+  auto p = new PolySet(3, Geometry::Attributes{}, true);
   if (
     this->h <= 0 || !std::isfinite(this->h)
     || this->r1 < 0 || !std::isfinite(this->r1)
@@ -557,7 +557,7 @@ std::string PolyhedronNode::toString() const
 
 const Geometry *PolyhedronNode::createGeometry() const
 {
-  auto p = new PolySet(3, this->getGeometryAttributes());
+  auto p = new PolySet(3, Geometry::Attributes{});
   p->setConvexity(this->convexity);
   for (const auto& face : this->faces) {
     p->append_poly();
@@ -666,7 +666,7 @@ public:
 
 const Geometry *SquareNode::createGeometry() const
 {
-  auto p = new Polygon2d(this->getGeometryAttributes());
+  auto p = new Polygon2d(Geometry::Attributes{});
   if (
     this->x <= 0 || !std::isfinite(this->x)
     || this->y <= 0 || !std::isfinite(this->y)
@@ -750,7 +750,7 @@ public:
 
 const Geometry *CircleNode::createGeometry() const
 {
-  auto p = new Polygon2d(this->getGeometryAttributes());
+  auto p = new Polygon2d(Geometry::Attributes{});
   if (this->r <= 0 || !std::isfinite(this->r)) {
     return p;
   }
@@ -851,7 +851,7 @@ std::string PolygonNode::toString() const
 
 const Geometry *PolygonNode::createGeometry() const
 {
-  auto p = new Polygon2d(this->getGeometryAttributes());
+  auto p = new Polygon2d(Geometry::Attributes{});
   if (this->paths.empty() && this->points.size() > 2) {
     Outline2d outline;
     for (const auto& point : this->points) {

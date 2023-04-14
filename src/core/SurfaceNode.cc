@@ -257,7 +257,7 @@ const Geometry *SurfaceNode::createGeometry() const
 {
   auto data = read_png_or_dat(filename);
 
-  auto p = new PolySet(3, this->getGeometryAttributes());
+  auto p = new PolySet(3, Geometry::Attributes{});
   p->setConvexity(convexity);
 
   int lines = data.height;

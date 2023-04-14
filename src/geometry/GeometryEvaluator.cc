@@ -37,7 +37,7 @@
 #include <CGAL/convex_hull_2.h>
 #include <CGAL/Point_2.h>
 
-#define GEOMETRYLIST_TEST 1
+//#define GEOMETRYLIST_TEST 1
 
 GeometryEvaluator::GeometryEvaluator(const class Tree& tree) :
   tree(tree)

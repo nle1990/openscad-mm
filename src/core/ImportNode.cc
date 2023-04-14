@@ -198,7 +198,7 @@ const Geometry *ImportNode::createGeometry() const
   }
   case ImportType::DXF: {
     DxfData dd(this->fn, this->fs, this->fa, this->filename, this->layer.value_or(""), this->origin_x, this->origin_y, this->scale);
-    g = dd.toPolygon2d(this->getGeometryAttributes()); //FIXME-MM: investigate whether any attributes could be set here (or inside DxfData instead and removing this parameter)
+    g = dd.toPolygon2d(Geometry::Attributes{}); //FIXME-MM: investigate whether any attributes could be set here (or inside DxfData instead and removing this parameter)
     break;
   }
 #ifdef ENABLE_CGAL

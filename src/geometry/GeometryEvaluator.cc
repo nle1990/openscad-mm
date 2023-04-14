@@ -161,8 +161,44 @@ GeometryEvaluator::ResultObject GeometryEvaluator::softUnionGeometries(const Abs
     if (!isValidDim(item, dim)) break;
   }
   if (dim == 2) {
-    //FIXME-MM
-    return ResultObject(applyToChildren2D(node, OpenSCADOperator::UNION));
+    auto childGroups = collectExactAttributeMatchChildGroups(node, 2);
+
+    if (childGroups.empty()) {
+      return ResultObject();
+    }
+
+    Geometry::Geometries geometries;
+    for (const auto& children : childGroups)
+    {
+      if (children.second.size() == 1) {
+        if(children.second.front().second) {
+          auto poly = dynamic_pointer_cast<const Polygon2d>(children.second.front().second);
+          geometries.push_back(std::make_pair(std::shared_ptr<AbstractNode>(), std::shared_ptr<const Geometry>(new Polygon2d(*poly)))); // Copy
+        }
+        continue;
+      }
+
+      Geometry::Attributes resultAttributes = children.first;
+      geometries.push_back(std::make_pair(std::shared_ptr<AbstractNode>(), std::shared_ptr<const Geometry>(ClipperUtils::apply(children.second, ClipperLib::ctUnion, resultAttributes))));
+    }
+
+    if(geometries.size() > 1)
+    {
+      return ResultObject(std::shared_ptr<const Geometry>(new GeometryList(geometries)));
+    }
+    else if(geometries.size() == 1)
+    {
+      #ifdef GEOMETRYLIST_TEST
+        return ResultObject(std::shared_ptr<const Geometry>(new GeometryList(geometries))); //FIXME-MM: undo this (geometrylist compat check)
+      #else
+        return ResultObject(geometries.front().second);
+      #endif
+    }
+    else
+    {
+      return ResultObject();
+    }
+
   }
   else if (dim == 3) {
     auto childGroups = collectExactAttributeMatchChildGroups(node, 3);

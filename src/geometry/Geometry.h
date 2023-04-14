@@ -80,6 +80,10 @@ public:
     return {.materialName = attributes.materialName, .partName = attributes.partName};
   }
 
+  Geometry::Attributes getAttributes() const {
+    return attributes;
+  }
+
   static Geometry::IrreconcilableAttributes getDefaultIrreconcilableAttributes() {
     return {.materialName = "", .partName = ""};
   }

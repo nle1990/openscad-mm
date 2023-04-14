@@ -72,6 +72,8 @@ private:
   bool isSmartCached(const AbstractNode& node);
   bool isValidDim(const Geometry::GeometryItem& item, unsigned int& dim) const;
   std::map<Geometry::IrreconcilableAttributes, Geometry::Geometries> collectReconcilableChildGroups(const AbstractNode& node, int dimension = -1);
+  std::map<Geometry::Attributes, Geometry::Geometries> collectExactAttributeMatchChildGroups(const AbstractNode& node, int dimension = -1);
+  GeometryEvaluator::ResultObject softUnionGeometries(const AbstractNode& node);
   std::pair<std::shared_ptr<const Geometry>, Geometry::Geometries> collectDifferenceChildren3D(const AbstractNode& node);
   std::pair<std::shared_ptr<const Geometry>, Geometry::Geometries> collectDifferenceChildren2D(const AbstractNode& node);
   std::shared_ptr<const Geometry> applyMinkowski2D(const AbstractNode& node);

@@ -150,6 +150,62 @@ GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren(const Abstrac
   return ResultObject();
 }
 
+
+/*!
+   Performs a union operation on geometries with exact matching attributes (including color)
+ */
+GeometryEvaluator::ResultObject GeometryEvaluator::softUnionGeometries(const AbstractNode& node)
+{
+  unsigned int dim = 0;
+  for (const auto& item : this->visitedchildren[node.index()]) {
+    if (!isValidDim(item, dim)) break;
+  }
+  if (dim == 2) {
+    //FIXME-MM
+    return ResultObject(applyToChildren2D(node, OpenSCADOperator::UNION));
+  }
+  else if (dim == 3) {
+    auto childGroups = collectExactAttributeMatchChildGroups(node, 3);
+    if (childGroups.size() == 0) return ResultObject();
+
+    Geometry::Geometries geometries;
+    for (const auto& children : childGroups)
+    {
+      Geometry::GeometryItem firstChild = children.second.front();
+      Geometry::Attributes resultAttributes = children.first;
+
+      Geometry::Geometries actualchildren;
+      for (const auto& item : children.second) {
+        if (item.second && !item.second->isEmpty())
+        {
+          actualchildren.push_back(item);
+        }
+      }
+      if (actualchildren.empty()) continue;
+      if (actualchildren.size() == 1) geometries.push_back(std::make_pair(std::shared_ptr<AbstractNode>(), actualchildren.front().second));
+      else geometries.push_back(std::make_pair(std::shared_ptr<AbstractNode>(), CGALUtils::applyUnion3D(actualchildren.begin(), actualchildren.end(), resultAttributes)));
+    }
+
+    if(geometries.size() > 1)
+    {
+      return ResultObject(new GeometryList(geometries));
+    }
+    else if(geometries.size() == 1)
+    {
+      #ifdef GEOMETRYLIST_TEST
+        return ResultObject(new GeometryList(geometries)); //FIXME-MM: undo this (geometrylist compat check)
+      #else
+        return ResultObject(geometries.front().second);
+      #endif
+    }
+    else
+    {
+      return ResultObject();
+    }
+  }
+  return ResultObject();
+}
+
 /*!
    Applies the operator to all child nodes of the given node.
 
@@ -657,6 +713,91 @@ shared_ptr<const Geometry> GeometryEvaluator::smartCacheGet(const AbstractNode& 
   return geom;
 }
 
+/*!
+   Returns a list of 3D Geometry children with compatible attributes of the given node.
+   May return empty geometries, but not nullptr objects
+ */
+std::map<Geometry::Attributes, Geometry::Geometries> GeometryEvaluator::collectExactAttributeMatchChildGroups(const AbstractNode& node, int dimension)
+{
+  std::map<Geometry::Attributes, Geometry::Geometries> childgroups;
+  for (const auto& item : this->visitedchildren[node.index()]) {
+    auto &chnode = item.first;
+    const shared_ptr<const Geometry>& chgeom = item.second;
+    if (chnode->modinst->isBackground()) continue;
+
+    // NB! We insert into the cache here to ensure that all children of
+    // a node is a valid object. If we inserted as we created them, the
+    // cache could have been modified before we reach this point due to a large
+    // sibling object.
+    smartCacheInsert(*chnode, chgeom);
+
+
+    auto sortGeometry = [&](const Geometry::GeometryItem &item) {
+      Geometry::Attributes group;
+      if(item.second) {
+        // Geometry attributes have precedence since nodes may have children that set further attributes, which their parents are not privy to
+        group = item.second->getAttributes();
+      } else if(item.first) {
+        // FIXME-MM: this would ignore the material component of something like 'part("p1") material("m1");'. Although, of course,
+        // this only happens with empty geometries so maybe that's okay-ish?
+        // removing this else if breaks the following tests:
+        // 371 - cgalpngtest_issue666_2D
+        // 394 - cgalpngtest_intersection-tests
+        // 471 - cgalpngtest_issue666
+        // 774 - csgpngtest_issue666_2D
+        // 798 - csgpngtest_intersection-tests
+        // 874 - csgpngtest_issue666
+        // 1400 - dxfpngtest_issue666_2D
+        // 1464 - svgpngtest_issue666_2D
+        // use this to study the behaviour of this better and figure out what to do. Ideally it would be a better way of getting
+        // node attributes, maybe by letting children overwrite any attributes that have not been set at all (would need to add
+        // flags for this to nodes)
+        // what about part("p1") { material("m1"); material("m2"); } though?
+        // see issue #19 on my tracker
+        group = item.first->getGeometryAttributes();
+      } else {
+        group = Geometry::getDefaultAttributes();
+      }
+
+      if (item.second && dimension != -1 && item.second->getDimension() != dimension) {
+        Location loc = Location::NONE;
+        std::string path = "";
+        if(item.first) {
+          loc = item.first->modinst->location();
+          path = this->tree.getDocumentPath();
+        }
+        //FIXME-MM: I should check if adding nodes to the geometrylists causes any problems, down the line, and then we might not need to check for item.first anymore (see #22)
+        LOG(message_group::Warning, loc, path, "Ignoring %1$iD child object for %2$iD operation", item.second->getDimension(), dimension);
+        childgroups[group].push_back(std::make_pair(item.first, nullptr)); // replace 2D geometry with empty geometry
+      } else {
+        // Add children if geometry is 3D OR null/empty
+        if(dimension == 2) {
+          if(item.second && !item.second->isEmpty()) {
+            assert(dynamic_cast<const Polygon2d *>(item.second.get()));
+            childgroups[group].push_back(item);
+          } else {
+            childgroups[group].push_back(std::make_pair(item.first, nullptr));
+          }
+        } else {
+          childgroups[group].push_back(item);
+        }
+      }
+
+    };
+
+    if (auto geolist = dynamic_pointer_cast<const GeometryList>(chgeom)) {
+      Geometry::Geometries geometries = geolist->flatten();
+      for(const auto& subitem : geometries)
+      {
+        sortGeometry(subitem);
+      }
+      continue;
+    }
+
+    sortGeometry(item);
+  }
+  return childgroups;
+}
 
 /*!
    Returns a list of 3D Geometry children with compatible attributes of the given node.
@@ -959,7 +1100,7 @@ Response GeometryEvaluator::visit(State& state, const AbstractNode& node)
   if (state.isPostfix()) {
     shared_ptr<const class Geometry> geom;
     if (!isSmartCached(node)) {
-      geom = applyToChildren(node, OpenSCADOperator::UNION).constptr();
+      geom = softUnionGeometries(node).constptr();
     } else {
       geom = smartCacheGet(node, state.preferNef());
     }

@@ -83,6 +83,7 @@ private:
   ResultObject applyToChildren(const AbstractNode& node, OpenSCADOperator op);
   shared_ptr<const Geometry> projectionCut(const ProjectionNode& node);
   shared_ptr<const Geometry> projectionNoCut(const ProjectionNode& node);
+  shared_ptr<const Geometry> getChildrenAsGeometry(const AbstractNode& node);
 
   void addToParent(const State& state, const AbstractNode& node, const shared_ptr<const Geometry>& geom);
   Response lazyEvaluateRootNode(State& state, const AbstractNode& node);

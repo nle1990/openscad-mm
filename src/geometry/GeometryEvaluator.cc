@@ -969,6 +969,31 @@ Response GeometryEvaluator::visit(State& state, const AbstractNode& node)
   return Response::ContinueTraversal;
 }
 
+shared_ptr<const Geometry> GeometryEvaluator::getChildrenAsGeometry(const AbstractNode& node)
+{
+  shared_ptr<const Geometry> geom;
+
+  unsigned int dim = 0;
+  GeometryList::Geometries geometries;
+  for (const auto& item : this->visitedchildren[node.index()]) {
+    if (!isValidDim(item, dim)) break;
+    auto &chnode = item.first;
+    const shared_ptr<const Geometry>& chgeom = item.second;
+    if (chnode->modinst->isBackground()) continue;
+    // NB! We insert into the cache here to ensure that all children of
+    // a node is a valid object. If we inserted as we created them, the
+    // cache could have been modified before we reach this point due to a large
+    // sibling object.
+    smartCacheInsert(*chnode, chgeom);
+    // Only use valid geometries
+    if (chgeom && !chgeom->isEmpty()) geometries.push_back(item);
+  }
+  if (geometries.size() == 1) geom = geometries.front().second;
+  else if (geometries.size() > 1) geom.reset(new GeometryList(geometries));
+
+  return geom;
+}
+
 /*!
  */
 Response GeometryEvaluator::visit(State& state, const ColorNode& node)
@@ -980,7 +1005,7 @@ Response GeometryEvaluator::visit(State& state, const ColorNode& node)
   if (state.isPostfix()) {
     shared_ptr<const class Geometry> geom;
     if (!isSmartCached(node)) {
-      geom = applyToChildren(node, OpenSCADOperator::UNION).constptr(); //FIXME-MM: get rid of the union, instead just build a geometry list
+      geom = getChildrenAsGeometry(node);
     } else {
       geom = smartCacheGet(node, state.preferNef());
     }
@@ -1010,7 +1035,7 @@ Response GeometryEvaluator::visit(State& state, const PartNode& node)
   if (state.isPostfix()) {
     shared_ptr<const class Geometry> geom;
     if (!isSmartCached(node)) {
-      geom = applyToChildren(node, OpenSCADOperator::UNION).constptr(); //FIXME-MM: get rid of the union, instead just build a geometry list
+      geom = getChildrenAsGeometry(node);
     } else {
       geom = smartCacheGet(node, state.preferNef());
     }
@@ -1040,7 +1065,7 @@ Response GeometryEvaluator::visit(State& state, const MaterialNode& node)
   if (state.isPostfix()) {
     shared_ptr<const class Geometry> geom;
     if (!isSmartCached(node)) {
-      geom = applyToChildren(node, OpenSCADOperator::UNION).constptr(); //FIXME-MM: get rid of the union, instead just build a geometry list
+      geom = getChildrenAsGeometry(node);
     } else {
       geom = smartCacheGet(node, state.preferNef());
     }
@@ -1104,26 +1129,7 @@ Response GeometryEvaluator::lazyEvaluateRootNode(State& state, const AbstractNod
     }
   }
   if (state.isPostfix()) {
-    shared_ptr<const class Geometry> geom;
-
-    unsigned int dim = 0;
-    GeometryList::Geometries geometries;
-    for (const auto& item : this->visitedchildren[node.index()]) {
-      if (!isValidDim(item, dim)) break;
-      auto &chnode = item.first;
-      const shared_ptr<const Geometry>& chgeom = item.second;
-      if (chnode->modinst->isBackground()) continue;
-      // NB! We insert into the cache here to ensure that all children of
-      // a node is a valid object. If we inserted as we created them, the
-      // cache could have been modified before we reach this point due to a large
-      // sibling object.
-      smartCacheInsert(*chnode, chgeom);
-      // Only use valid geometries
-      if (chgeom && !chgeom->isEmpty()) geometries.push_back(item);
-    }
-    if (geometries.size() == 1) geom = geometries.front().second;
-    else if (geometries.size() > 1) geom.reset(new GeometryList(geometries));
-
+    shared_ptr<const class Geometry> geom = getChildrenAsGeometry(node);
     this->root = geom;
   }
   return Response::ContinueTraversal;

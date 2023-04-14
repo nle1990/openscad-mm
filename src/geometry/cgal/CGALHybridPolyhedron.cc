@@ -39,6 +39,7 @@ CGALHybridPolyhedron& CGALHybridPolyhedron::operator=(const CGALHybridPolyhedron
   } else {
     assert(!"Bad hybrid polyhedron state");
   }
+  attributes = other.attributes;
   return *this;
 }
 

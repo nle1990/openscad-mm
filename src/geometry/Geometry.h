@@ -20,6 +20,20 @@ public:
     std::string materialName = "";
     std::string partName = "";
     Color4f color = {-1.0f, -1.0f, -1.0f, 1.0f};
+
+    bool operator==(const Geometry::Attributes &o) const {
+        return materialName == o.materialName && partName == o.partName && color == o.color;
+    }
+
+    bool operator!=(const Geometry::Attributes &o) const {
+        return materialName != o.materialName || partName != o.partName || color != o.color;
+    }
+
+    bool operator<(const Geometry::Attributes &o)  const {
+        return materialName < o.materialName
+               || (materialName == o.materialName && partName < o.partName)
+               || (materialName == o.materialName && partName == o.partName && color < o.color);
+    }
   };
 
   struct IrreconcilableAttributes {
@@ -28,6 +42,10 @@ public:
 
     bool operator==(const Geometry::IrreconcilableAttributes &o) const {
         return materialName == o.materialName && partName == o.partName;
+    }
+
+    bool operator!=(const Geometry::IrreconcilableAttributes &o) const {
+        return materialName != o.materialName || partName != o.partName;
     }
 
     bool operator<(const Geometry::IrreconcilableAttributes &o)  const {

@@ -49,7 +49,6 @@ shared_ptr<CGALHybridPolyhedron> applyUnion3DHybrid(
       if (!poly) {
         continue;
       }
-      poly->setAttributes(attr);
 
       auto node_mark = item.first ? item.first->progress_mark : -1;
       queueItems.emplace_back(poly, node_mark);
@@ -72,7 +71,9 @@ shared_ptr<CGALHybridPolyhedron> applyUnion3DHybrid(
     }
 
     if (q.size() == 1) {
-      return q.top().first;
+      auto returnGeom = q.top().first;
+      returnGeom->setAttributes(attr);
+      return returnGeom;
     } else {
       return nullptr;
     }

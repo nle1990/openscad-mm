@@ -80,9 +80,6 @@ static bool append_polyset(const PolySet& ps, PLib3MFModelMeshObject *& model)
   }
 
   std::string modelName = ps.attributes.partName;
-  if(modelName == "") {
-    modelName = "OpenSCAD Model";
-  }
 
   if (lib3mf_object_setnameutf8(mesh, modelName.c_str()) != LIB3MF_OK) {
     export_3mf_error("Can't set name for 3MF model.", model);
@@ -307,9 +304,6 @@ static bool append_polyset(const PolySet& ps, Lib3MF::PWrapper& wrapper, Lib3MF:
 
 
     std::string modelName = ps.attributes.partName;
-    if(modelName == "") {
-      modelName = "OpenSCAD Model";
-    }
 
     mesh->SetName(modelName);
 
@@ -436,6 +430,8 @@ static bool append_3mf(const shared_ptr<const Geometry>& geom, Lib3MF::PWrapper&
 
 void export_3mf(const shared_ptr<const Geometry>& geom, std::ostream& output)
 {
+  materials = {};
+
   LOG(message_group::None, Location::NONE, "", "3mf export: lib3mf v2.x");
   Lib3MF_uint32 interfaceVersionMajor, interfaceVersionMinor, interfaceVersionMicro;
   Lib3MF::PWrapper wrapper;

@@ -326,6 +326,28 @@ Geometry *import_3mf(const std::string& filename, const Location& loc)
       return import_3mf_error(first_mesh);
     }
 
+    Geometry::Attributes attr{};
+    try {
+      attr.partName = object->GetName();
+      Lib3MF_uint32 nUniqueResourceID;
+      Lib3MF_uint32 nPropertyID;
+      object->GetObjectLevelProperty(nUniqueResourceID, nPropertyID);
+      Lib3MF::ePropertyType pType = model->GetPropertyTypeByID(nUniqueResourceID);
+      if(pType == Lib3MF::ePropertyType::BaseMaterial) {
+        Lib3MF::PBaseMaterialGroup materialGroup = model->GetBaseMaterialGroupByID(nUniqueResourceID);
+        attr.materialName = materialGroup->GetName(nPropertyID);
+        Lib3MF::sColor color = materialGroup->GetDisplayColor(nPropertyID);
+        attr.color = Color4f{color.m_Red / 255.0f, color.m_Green / 255.0f, color.m_Blue / 255.0f, color.m_Alpha / 255.0f};
+      } else if(pType == Lib3MF::ePropertyType::Colors) {
+        Lib3MF::PColorGroup colorGroup = model->GetColorGroupByID(nUniqueResourceID);
+        Lib3MF::sColor color = colorGroup->GetColor(nPropertyID);
+        attr.color = Color4f{color.m_Red / 255.0f, color.m_Green / 255.0f, color.m_Blue / 255.0f, color.m_Alpha / 255.0f};
+      }
+    } catch (Lib3MF::ELib3MFException& e) {
+      LOG(message_group::Error, Location::NONE, "", e.what());
+      return import_3mf_error(first_mesh);
+    }
+
     Lib3MF_uint64 vertex_count = object->GetVertexCount();
     if (!vertex_count) {
       return import_3mf_error(first_mesh);
@@ -337,7 +359,7 @@ Geometry *import_3mf(const std::string& filename, const Location& loc)
 
     PRINTDB("%s: mesh %d, vertex count: %lu, triangle count: %lu", filename.c_str() % mesh_idx % vertex_count % triangle_count);
 
-    PolySet *p = new PolySet(3, Geometry::Attributes{}); //FIXME-MM: set attributes properly
+    PolySet *p = new PolySet(3, attr);
     for (Lib3MF_uint64 idx = 0; idx < triangle_count; ++idx) {
       Lib3MF::sTriangle triangle = object->GetTriangle(idx);
       Lib3MF::sPosition vertex1, vertex2, vertex3;
@@ -366,22 +388,13 @@ Geometry *import_3mf(const std::string& filename, const Location& loc)
   } else if (meshes.empty()) {
     return first_mesh;
   } else {
-    PolySet *p = nullptr;
-#ifdef ENABLE_CGAL
+    Geometry *geom = nullptr;
     Geometry::Geometries children;
     children.push_back(std::make_pair(std::shared_ptr<const AbstractNode>(),  shared_ptr<const Geometry>(first_mesh)));
     for (polysets_t::iterator it = meshes.begin(); it != meshes.end(); ++it) {
       children.push_back(std::make_pair(std::shared_ptr<const AbstractNode>(),  shared_ptr<const Geometry>(*it)));
     }
-    if (auto ps = CGALUtils::getGeometryAsPolySet(CGALUtils::applyUnion3D(children.begin(), children.end(), Geometry::Attributes{}))) {  //FIXME-MM: set attributes properly, and do not union
-      p = new PolySet(*ps);
-    } else {
-      p = new PolySet(3, Geometry::Attributes{});
-    }
-#else
-    p = new PolySet(3, Geometry::Attributes{});
-#endif // ifdef ENABLE_CGAL
-    return p;
+    return new GeometryList(children);
   }
 }
 

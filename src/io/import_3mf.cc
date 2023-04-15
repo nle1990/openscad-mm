@@ -136,6 +136,52 @@ Geometry *import_3mf(const std::string& filename, const Location& loc)
       return import_3mf_error(model, object_it, first_mesh);
     }
 
+    Geometry::Attributes attr{};
+    char buffer[1024];
+    ULONG pcbNeededChars;
+    result = lib3mf_object_getnameutf8(object, buffer, 1024, &pcbNeededChars);
+    if (result == LIB3MF_OK) {
+      attr.partName = std::string(buffer);
+    }
+
+    [&](){
+      PLib3MFDefaultPropertyHandler *ppPropertyHandler;
+      result = lib3mf_object_createdefaultpropertyhandler(object, &ppPropertyHandler);
+      if (result != LIB3MF_OK) {
+        return;
+      }
+
+      DWORD pnMaterialGroupID;
+      DWORD pnMaterialIndex;
+      result = lib3mf_defaultpropertyhandler_getbasematerial(ppPropertyHandler, &pnMaterialGroupID, &pnMaterialIndex);
+      if (result != LIB3MF_OK) {
+        return;
+      }
+
+      PLib3MFModelBaseMaterial* ppMaterial;
+      result = lib3mf_model_getbasematerialbyid(model, pnMaterialGroupID, &ppMaterial);
+      if (result != LIB3MF_OK) {
+        return;
+      }
+
+      result = lib3mf_basematerial_getnameutf8(ppMaterial, pnMaterialIndex, buffer, 1024, &pcbNeededChars);
+      if (result != LIB3MF_OK) {
+        return;
+      }
+      attr.materialName = std::string(buffer);
+
+      BYTE red;
+      BYTE green;
+      BYTE blue;
+      BYTE alpha;
+      result = lib3mf_basematerial_getdisplaycolor(ppMaterial, pnMaterialIndex, &red, &green, &blue, &alpha);
+      if (result != LIB3MF_OK) {
+        return;
+      }
+
+      attr.color = Color4f{red / 255.0f, green / 255.0f, blue / 255.0f, alpha / 255.0f};
+    }();
+
     DWORD vertex_count;
     result = lib3mf_meshobject_getvertexcount(object, &vertex_count);
     if (result != LIB3MF_OK) {
@@ -149,7 +195,7 @@ Geometry *import_3mf(const std::string& filename, const Location& loc)
 
     PRINTDB("%s: mesh %d, vertex count: %lu, triangle count: %lu", filename.c_str() % mesh_idx % vertex_count % triangle_count);
 
-    PolySet *p = new PolySet(3, Geometry::Attributes{}); //FIXME-MM: actually import attributes
+    PolySet *p = new PolySet(3, attr);
     for (DWORD idx = 0; idx < triangle_count; ++idx) {
       MODELMESHTRIANGLE triangle;
       if (lib3mf_meshobject_gettriangle(object, idx, &triangle) != LIB3MF_OK) {
@@ -189,22 +235,13 @@ Geometry *import_3mf(const std::string& filename, const Location& loc)
   } else if (meshes.empty()) {
     return first_mesh;
   } else {
-    PolySet *p = nullptr;
-#ifdef ENABLE_CGAL
+    Geometry *geom = nullptr;
     Geometry::Geometries children;
-    children.push_back(std::make_pair(std::shared_ptr<AbstractNode>(),  shared_ptr<const Geometry>(first_mesh)));
+    children.push_back(std::make_pair(std::shared_ptr<const AbstractNode>(),  shared_ptr<const Geometry>(first_mesh)));
     for (polysets_t::iterator it = meshes.begin(); it != meshes.end(); ++it) {
-      children.push_back(std::make_pair(std::shared_ptr<AbstractNode>(),  shared_ptr<const Geometry>(*it)));
+      children.push_back(std::make_pair(std::shared_ptr<const AbstractNode>(),  shared_ptr<const Geometry>(*it)));
     }
-    if (auto ps = CGALUtils::getGeometryAsPolySet(CGALUtils::applyUnion3D(children.begin(), children.end(), Geometry::Attributes{}))) { //FIXME-MM: set attributes properly, and do not union
-      p = new PolySet(*ps);
-    } else {
-      p = new PolySet(3, Geometry::Attributes{});
-    }
-#else
-    p = new PolySet(3, Geometry::Attributes{});
-#endif // ifdef ENABLE_CGAL
-    return p;
+    return new GeometryList(children);
   }
 }
 

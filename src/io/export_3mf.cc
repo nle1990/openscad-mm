@@ -228,7 +228,6 @@ static bool append_3mf(const shared_ptr<const Geometry>& geom, PLib3MFModelMeshO
  */
 void export_3mf(const shared_ptr<const Geometry>& geom, std::ostream& output)
 {
-  LOG(message_group::None, Location::NONE, "", "3mf export: lib3mf v1.x");
   DWORD interfaceVersionMajor, interfaceVersionMinor, interfaceVersionMicro;
   HRESULT result = lib3mf_getinterfaceversion(&interfaceVersionMajor, &interfaceVersionMinor, &interfaceVersionMicro);
   if (result != LIB3MF_OK) {
@@ -432,7 +431,6 @@ void export_3mf(const shared_ptr<const Geometry>& geom, std::ostream& output)
 {
   materials = {};
 
-  LOG(message_group::None, Location::NONE, "", "3mf export: lib3mf v2.x");
   Lib3MF_uint32 interfaceVersionMajor, interfaceVersionMinor, interfaceVersionMicro;
   Lib3MF::PWrapper wrapper;
 

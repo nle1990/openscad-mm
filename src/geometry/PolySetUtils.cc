@@ -14,7 +14,7 @@ namespace PolySetUtils {
 // It is important to select all faces, since filtering by normal vector here
 // will trigger floating point incertainties and cause problems later.
 Polygon2d *project(const PolySet& ps) {
-  auto poly = new Polygon2d(ps.attributes);
+  auto poly = new Polygon2d(ps.getAttributes());
 
   for (const auto& p : ps.polygons) {
     Outline2d outline;

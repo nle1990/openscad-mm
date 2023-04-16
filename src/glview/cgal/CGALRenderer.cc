@@ -58,7 +58,7 @@ void CGALRenderer::addGeometry(const shared_ptr<const Geometry>& geom)
     assert(ps->getDimension() == 3);
     // We need to tessellate here, in case the generated PolySet contains concave polygons
     // See tests/data/scad/3D/features/polyhedron-concave-test.scad
-    auto ps_tri = new PolySet(3, ps->attributes, ps->convexValue());
+    auto ps_tri = new PolySet(3, ps->getAttributes(), ps->convexValue());
     ps_tri->setConvexity(ps->getConvexity());
     PolySetUtils::tessellate_faces(*ps, *ps_tri);
     this->polysets.push_back(shared_ptr<const PolySet>(ps_tri));
@@ -92,9 +92,11 @@ void CGALRenderer::createPolyhedrons()
   PRINTD("createPolyhedrons");
   this->polyhedrons.clear();
 
+
   if (!Feature::ExperimentalVxORenderers.is_enabled()) {
     for (const auto& N : this->nefPolyhedrons) {
-      auto p = new CGAL_OGL_Polyhedron(*this->colorscheme, N->attributes.color);
+      Geometry::Attributes attr = N->getAttributes();
+      auto p = new CGAL_OGL_Polyhedron(*this->colorscheme, attr.color);
       CGAL::OGL::Nef3_Converter<CGAL_Nef_polyhedron3>::convert_to_OGLPolyhedron(*N->p3, p);
       // CGAL_NEF3_MARKED_FACET_COLOR <- CGAL_FACE_BACK_COLOR
       // CGAL_NEF3_UNMARKED_FACET_COLOR <- CGAL_FACE_FRONT_COLOR
@@ -103,7 +105,8 @@ void CGALRenderer::createPolyhedrons()
     }
   } else {
     for (const auto& N : this->nefPolyhedrons) {
-      auto p = new CGAL_OGL_VBOPolyhedron(*this->colorscheme, N->attributes.color);
+      Geometry::Attributes attr = N->getAttributes();
+      auto p = new CGAL_OGL_VBOPolyhedron(*this->colorscheme, attr.color);
       CGAL::OGL::Nef3_Converter<CGAL_Nef_polyhedron3>::convert_to_OGLPolyhedron(*N->p3, p);
       // CGAL_NEF3_MARKED_FACET_COLOR <- CGAL_FACE_BACK_COLOR
       // CGAL_NEF3_UNMARKED_FACET_COLOR <- CGAL_FACE_FRONT_COLOR
@@ -187,13 +190,14 @@ void CGALRenderer::createPolySets()
       polyset_states.emplace_back(std::move(init_state));
 
       // Create 2D polygons
-      if(polyset->attributes.color == Color4f{-1.0f, -1.0f, -1.0f, 1.0f})
+      Geometry::Attributes attr = polyset->getAttributes();
+      if(attr.color == Color4f{-1.0f, -1.0f, -1.0f, 1.0f})
       {
         getColor(ColorMode::CGAL_FACE_2D_COLOR, color);
       }
       else
       {
-        color = polyset->attributes.color;
+        color = attr.color;
       }
       this->create_polygons(*polyset, vertex_array, CSGMODE_NONE, Transform3d::Identity(), color);
 
@@ -223,13 +227,14 @@ void CGALRenderer::createPolySets()
       vertex_array.writeSurface();
 
       // Create 3D polygons
-      if(polyset->attributes.color == Color4f{-1.0f, -1.0f, -1.0f, 1.0f})
+      Geometry::Attributes attr = polyset->getAttributes();
+      if(attr.color == Color4f{-1.0f, -1.0f, -1.0f, 1.0f})
       {
         getColor(ColorMode::MATERIAL, color);
       }
       else
       {
-        color = polyset->attributes.color;
+        color = attr.color;
       }
       this->create_surface(*polyset, vertex_array, CSGMODE_NORMAL, Transform3d::Identity(), color);
     }
@@ -272,13 +277,14 @@ void CGALRenderer::draw(bool showfaces, bool showedges, const shaderinfo_t * /*s
         // Draw 2D polygons
         glDisable(GL_LIGHTING);
 
-        if(polyset->attributes.color == Color4f{-1.0f, -1.0f, -1.0f, 1.0f})
+        Geometry::Attributes attr = polyset->getAttributes();
+        if(attr.color == Color4f{-1.0f, -1.0f, -1.0f, 1.0f})
         {
           setColor(ColorMode::CGAL_FACE_2D_COLOR);
         }
         else
         {
-          float color[4] = {polyset->attributes.color[0], polyset->attributes.color[1], polyset->attributes.color[2], polyset->attributes.color[3]};
+          float color[4] = {attr.color[0], attr.color[1], attr.color[2], attr.color[3]};
           setColor(color);
         }
 
@@ -299,13 +305,14 @@ void CGALRenderer::draw(bool showfaces, bool showedges, const shaderinfo_t * /*s
         glEnable(GL_DEPTH_TEST);
       } else {
         // Draw 3D polygons
-        if(polyset->attributes.color == Color4f{-1.0f, -1.0f, -1.0f, 1.0f})
+        Geometry::Attributes attr = polyset->getAttributes();
+        if(attr.color == Color4f{-1.0f, -1.0f, -1.0f, 1.0f})
         {
           setColor(ColorMode::MATERIAL);
         }
         else
         {
-          float color[4] = {polyset->attributes.color[0], polyset->attributes.color[1], polyset->attributes.color[2], polyset->attributes.color[3]};
+          float color[4] = {attr.color[0], attr.color[1], attr.color[2], attr.color[3]};
           setColor(color);
         }
         this->render_surface(*polyset, CSGMODE_NORMAL, Transform3d::Identity(), nullptr);

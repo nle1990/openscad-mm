@@ -70,7 +70,7 @@ ClipperLib::PolyTree sanitize(const ClipperLib::Paths& paths)
 Polygon2d *sanitize(const Polygon2d& poly)
 {
   auto tmp = ClipperUtils::fromPolygon2d(poly);
-  return toPolygon2d(sanitize(tmp.geometry), ClipperUtils::getScalePow2(tmp.bounds), poly.attributes);
+  return toPolygon2d(sanitize(tmp.geometry), ClipperUtils::getScalePow2(tmp.bounds), poly.getAttributes());
 }
 
 /*!
@@ -377,6 +377,6 @@ Polygon2d *applyOffset(const Polygon2d& poly, double offset, ClipperLib::JoinTyp
   co.AddPaths(p, joinType, ClipperLib::etClosedPolygon);
   ClipperLib::PolyTree result;
   co.Execute(result, std::ldexp(offset, pow2));
-  return toPolygon2d(result, pow2, poly.attributes);
+  return toPolygon2d(result, pow2, poly.getAttributes());
 }
 } // namespace ClipperUtils

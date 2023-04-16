@@ -104,10 +104,11 @@ static void append_amf(const CGAL_Nef_polyhedron& root_N, std::ostream& output)
       } while (hc != hc_end);
     }
 
+    Geometry::Attributes attr = root_N.getAttributes();
     int currentMaterial = 0;
-    if(root_N.attributes.materialName != "" || root_N.attributes.color != Color4f{-1.0F, -1.0F, -1.0F, 1.0F})
+    if(attr.materialName != "" || attr.color != Color4f{-1.0F, -1.0F, -1.0F, 1.0F})
     {
-      auto uniqueAttributes = std::pair<std::string, Color4f>(root_N.attributes.materialName, root_N.attributes.color);
+      auto uniqueAttributes = std::pair<std::string, Color4f>(attr.materialName, attr.color);
       if(materials.find(uniqueAttributes) != materials.end()) {
         currentMaterial = materials[uniqueAttributes];
       } else {
@@ -118,15 +119,15 @@ static void append_amf(const CGAL_Nef_polyhedron& root_N, std::ostream& output)
 
         //the material name can only contain [a-zA-Z0-9_], so no escaping is needed
         output << " <material id=\"" << materialid << "\">\r\n";
-        if(root_N.attributes.materialName != "") {
-          output << "  <metadata type=\"name\">" << root_N.attributes.materialName << "</metadata>\r\n";
+        if(attr.materialName != "") {
+          output << "  <metadata type=\"name\">" << attr.materialName << "</metadata>\r\n";
         }
-        if(root_N.attributes.color != Color4f{-1.0F, -1.0F, -1.0F, 1.0F}) {
+        if(attr.color != Color4f{-1.0F, -1.0F, -1.0F, 1.0F}) {
           output << "  <color>";
-          output << "<r>" << root_N.attributes.color[0] << "</r>";
-          output << "<g>" << root_N.attributes.color[1] << "</g>";
-          output << "<b>" << root_N.attributes.color[2] << "</b>";
-          output << "<a>" << root_N.attributes.color[3] << "</a>";
+          output << "<r>" << attr.color[0] << "</r>";
+          output << "<g>" << attr.color[1] << "</g>";
+          output << "<b>" << attr.color[2] << "</b>";
+          output << "<a>" << attr.color[3] << "</a>";
           output << "</color>\r\n";
         }
         output << " </material>\r\n";

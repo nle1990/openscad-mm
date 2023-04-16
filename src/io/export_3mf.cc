@@ -79,7 +79,9 @@ static bool append_polyset(const PolySet& ps, PLib3MFModelMeshObject *& model)
     return false;
   }
 
-  std::string modelName = ps.attributes.partName;
+  Geometry::Attributes attr = ps.getAttributes();
+
+  std::string modelName = attr.partName;
 
   if (lib3mf_object_setnameutf8(mesh, modelName.c_str()) != LIB3MF_OK) {
     export_3mf_error("Can't set name for 3MF model.", model);
@@ -87,8 +89,8 @@ static bool append_polyset(const PolySet& ps, PLib3MFModelMeshObject *& model)
   }
 
   // Since each geometry only ever has one color and material, it's enough to define a default
-  if(ps.attributes.color != Color4f{-1.0F, -1.0F, -1.0F, 1.0F} || ps.attributes.materialName != "") {
-    auto uniqueAttributes = std::pair<std::string, Color4f>(ps.attributes.materialName, ps.attributes.color);
+  if(attr.color != Color4f{-1.0F, -1.0F, -1.0F, 1.0F} || attr.materialName != "") {
+    auto uniqueAttributes = std::pair<std::string, Color4f>(attr.materialName, attr.color);
     std::pair<DWORD, DWORD> currentMaterial;
     if(materials.find(uniqueAttributes) != materials.end()) {
       currentMaterial = materials[uniqueAttributes];
@@ -98,11 +100,11 @@ static bool append_polyset(const PolySet& ps, PLib3MFModelMeshObject *& model)
       BYTE blue = 255;
       BYTE alpha = 255;
 
-      if(ps.attributes.color != Color4f{-1.0F, -1.0F, -1.0F, 1.0F}) {
-        red = ps.attributes.color[0] * 255.0f;
-        green = ps.attributes.color[1] * 255.0f;
-        blue = ps.attributes.color[2] * 255.0f;
-        alpha = ps.attributes.color[3] * 255.0f;
+      if(attr.color != Color4f{-1.0F, -1.0F, -1.0F, 1.0F}) {
+        red = attr.color[0] * 255.0f;
+        green = attr.color[1] * 255.0f;
+        blue = attr.color[2] * 255.0f;
+        alpha = attr.color[3] * 255.0f;
       }
 
       PLib3MFModelBaseMaterial *materialGroup;
@@ -113,7 +115,7 @@ static bool append_polyset(const PolySet& ps, PLib3MFModelMeshObject *& model)
         return false;
       }
 
-      if (lib3mf_basematerial_addmaterialutf8(materialGroup, ps.attributes.materialName.c_str(), red, green, blue, &materialResourceIndex) != LIB3MF_OK) {
+      if (lib3mf_basematerial_addmaterialutf8(materialGroup, attr.materialName.c_str(), red, green, blue, &materialResourceIndex) != LIB3MF_OK) {
         export_3mf_error("Can't add material for 3MF model.", model);
         lib3mf_release(materialGroup);
         return false;
@@ -189,7 +191,7 @@ static bool append_nef(const CGAL_Nef_polyhedron& root_N, PLib3MFModelMeshObject
     LOG(message_group::Export_Warning, Location::NONE, "", "Exported object may not be a valid 2-manifold and may need repair");
   }
 
-  PolySet ps{3, root_N.attributes};
+  PolySet ps{3, root_N.getAttributes()};
   const bool err = CGALUtils::createPolySetFromNefPolyhedron3(*root_N.p3, ps);
   if (err) {
     export_3mf_error("Error converting NEF Polyhedron.", model);
@@ -210,7 +212,7 @@ static bool append_3mf(const shared_ptr<const Geometry>& geom, PLib3MFModelMeshO
   } else if (const auto hybrid = dynamic_pointer_cast<const CGALHybridPolyhedron>(geom)) {
     return append_polyset(*hybrid->toPolySet(), model);
   } else if (const auto ps = dynamic_pointer_cast<const PolySet>(geom)) {
-    PolySet triangulated(3, ps->attributes);
+    PolySet triangulated(3, ps->getAttributes());
     PolySetUtils::tessellate_faces(*ps, triangulated);
     return append_polyset(triangulated, model);
   } else if (dynamic_pointer_cast<const Polygon2d>(geom)) {
@@ -302,28 +304,29 @@ static bool append_polyset(const PolySet& ps, Lib3MF::PWrapper& wrapper, Lib3MF:
     if (!mesh) return false;
 
 
-    std::string modelName = ps.attributes.partName;
+    Geometry::Attributes attr = ps.getAttributes();
+    std::string modelName = attr.partName;
 
     mesh->SetName(modelName);
 
-    if(ps.attributes.color != Color4f{-1.0F, -1.0F, -1.0F, 1.0F} || ps.attributes.materialName != "") {
-      auto uniqueAttributes = std::pair<std::string, Color4f>(ps.attributes.materialName, ps.attributes.color);
+    if(attr.color != Color4f{-1.0F, -1.0F, -1.0F, 1.0F} || attr.materialName != "") {
+      auto uniqueAttributes = std::pair<std::string, Color4f>(attr.materialName, attr.color);
       std::pair<Lib3MF_uint32, Lib3MF_uint32> currentMaterial;
       if(materials.find(uniqueAttributes) != materials.end()) {
         currentMaterial = materials[uniqueAttributes];
       } else {
         Lib3MF::sColor color = {.m_Red = 255, .m_Green = 255, .m_Blue = 255, .m_Alpha = 255};
 
-        if(ps.attributes.color != Color4f{-1.0F, -1.0F, -1.0F, 1.0F}) {
-          color.m_Red = ps.attributes.color[0] * 255.0f;
-          color.m_Green = ps.attributes.color[1] * 255.0f;
-          color.m_Blue = ps.attributes.color[2] * 255.0f;
-          color.m_Alpha = ps.attributes.color[3] * 255.0f;
+        if(attr.color != Color4f{-1.0F, -1.0F, -1.0F, 1.0F}) {
+          color.m_Red = attr.color[0] * 255.0f;
+          color.m_Green = attr.color[1] * 255.0f;
+          color.m_Blue = attr.color[2] * 255.0f;
+          color.m_Alpha = attr.color[3] * 255.0f;
         }
 
         Lib3MF::PBaseMaterialGroup materialGroup = model->AddBaseMaterialGroup();
         Lib3MF_uint32 materialResourceID = materialGroup->GetResourceID();
-        Lib3MF_uint32 materialPropertyID = materialGroup->AddMaterial(ps.attributes.materialName, color);
+        Lib3MF_uint32 materialPropertyID = materialGroup->AddMaterial(attr.materialName, color);
         currentMaterial = std::pair<Lib3MF_uint32, Lib3MF_uint32>(materialResourceID, materialPropertyID);
         materials[uniqueAttributes] = currentMaterial;
       }
@@ -389,7 +392,7 @@ static bool append_nef(const CGAL_Nef_polyhedron& root_N, Lib3MF::PWrapper& wrap
     LOG(message_group::Export_Warning, Location::NONE, "", "Exported object may not be a valid 2-manifold and may need repair");
   }
 
-  PolySet ps{3, root_N.attributes};
+  PolySet ps{3, root_N->getAttributes()};
   const bool err = CGALUtils::createPolySetFromNefPolyhedron3(*root_N.p3, ps);
   if (err) {
     export_3mf_error("Error converting NEF Polyhedron.");
@@ -410,7 +413,7 @@ static bool append_3mf(const shared_ptr<const Geometry>& geom, Lib3MF::PWrapper&
   } else if (const auto hybrid = dynamic_pointer_cast<const CGALHybridPolyhedron>(geom)) {
     return append_polyset(*hybrid->toPolySet(), wrapper, model);
   } else if (const auto ps = dynamic_pointer_cast<const PolySet>(geom)) {
-    PolySet triangulated(3, ps->attributes);
+    PolySet triangulated(3, ps->getAttributes());
     PolySetUtils::tessellate_faces(*ps, triangulated);
     return append_polyset(triangulated, wrapper, model);
   } else if (dynamic_pointer_cast<const Polygon2d>(geom)) {

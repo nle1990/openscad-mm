@@ -74,7 +74,6 @@ public:
   virtual std::string toString() const { return "This Geometry type does not implement toString()!"; }
 
 
-  Attributes attributes;
 
   Geometry::IrreconcilableAttributes getIrreconcilableAttributes() const {
     return {.materialName = attributes.materialName, .partName = attributes.partName};
@@ -110,6 +109,7 @@ public:
 
 protected:
   int convexity;
+  Attributes attributes;
 };
 
 /**

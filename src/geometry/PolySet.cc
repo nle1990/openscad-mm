@@ -52,7 +52,7 @@ PolySet::PolySet(unsigned int dim, Geometry::Attributes attr, boost::tribool con
 
 PolySet::PolySet(const Polygon2d& origin) : polygon(origin), dim(2), convex(unknown), dirty(false)
 {
-  attributes = origin.attributes;
+  attributes = origin.getAttributes();
 }
 
 PolySet::~PolySet()

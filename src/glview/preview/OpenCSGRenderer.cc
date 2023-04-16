@@ -220,7 +220,8 @@ void OpenCSGRenderer::createCSGProducts(const CSGProducts& products, const Rende
 
     for (const auto& csgobj : product.intersections) {
       auto handleIntersectionPolySet = [&](const PolySet * ps) {
-        const Color4f& c = ps->attributes.color;
+        Geometry::Attributes attr = ps->getAttributes();
+        const Color4f& c = attr.color;
         csgmode_e csgmode = get_csgmode(highlight_mode, background_mode);
 
         ColorMode colormode = ColorMode::NONE;
@@ -321,7 +322,8 @@ void OpenCSGRenderer::createCSGProducts(const CSGProducts& products, const Rende
     for (const auto& csgobj : product.subtractions) {
 
       auto handleSubtractionPolySet = [&](const PolySet * ps) {
-        const Color4f& c = ps->attributes.color;
+        Geometry::Attributes attr = ps->getAttributes();
+        const Color4f& c = attr.color;
         csgmode_e csgmode = get_csgmode(highlight_mode, background_mode, OpenSCADOperator::DIFFERENCE);
 
         ColorMode colormode = ColorMode::NONE;
@@ -446,7 +448,8 @@ void OpenCSGRenderer::renderCSGProducts(const std::shared_ptr<CSGProducts>& prod
                         ((identifier >> 16) & 0xff) / 255.0f); GL_ERROR_CHECK();
           }
 
-          const Color4f& c = ps->attributes.color;
+          Geometry::Attributes attr = ps->getAttributes();
+          const Color4f& c = attr.color;
           csgmode_e csgmode = get_csgmode(highlight_mode, background_mode);
 
           ColorMode colormode = ColorMode::NONE;
@@ -496,7 +499,8 @@ void OpenCSGRenderer::renderCSGProducts(const std::shared_ptr<CSGProducts>& prod
 
       for (const auto& csgobj : product.subtractions) {
         auto handleSubtractionPolySet = [&](const PolySet * ps) {
-          const Color4f& c = ps->attributes.color;
+          Geometry::Attributes attr = ps->getAttributes();
+          const Color4f& c = attr.color;
           csgmode_e csgmode = get_csgmode(highlight_mode, background_mode, OpenSCADOperator::DIFFERENCE);
 
           ColorMode colormode = ColorMode::NONE;

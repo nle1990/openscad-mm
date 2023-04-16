@@ -31,7 +31,7 @@
 
 static CGAL_Nef_polyhedron *createNefPolyhedronFromPolySet(const PolySet& ps)
 {
-  if (ps.isEmpty()) return new CGAL_Nef_polyhedron(nullptr, ps.attributes);
+  if (ps.isEmpty()) return new CGAL_Nef_polyhedron(nullptr, ps.getAttributes());
   assert(ps.getDimension() == 3);
 
   // Since is_convex doesn't work well with non-planar faces,
@@ -39,7 +39,7 @@ static CGAL_Nef_polyhedron *createNefPolyhedronFromPolySet(const PolySet& ps)
   PolySet psq(ps);
   std::vector<Vector3d> points3d;
   psq.quantizeVertices(&points3d);
-  PolySet ps_tri(3, ps.attributes, psq.convexValue());
+  PolySet ps_tri(3, ps.getAttributes(), psq.convexValue());
   PolySetUtils::tessellate_faces(psq, ps_tri);
   if (ps_tri.is_convex()) {
     typedef CGAL::Epick K;
@@ -49,14 +49,14 @@ static CGAL_Nef_polyhedron *createNefPolyhedronFromPolySet(const PolySet& ps)
       points[i] = vector_convert<K::Point_3>(points3d[i]);
     }
 
-    if (points.size() <= 3) return new CGAL_Nef_polyhedron(nullptr, ps.attributes);
+    if (points.size() <= 3) return new CGAL_Nef_polyhedron(nullptr, ps.getAttributes());
 
     // Apply hull
     CGAL::Polyhedron_3<K> r;
     CGAL::convex_hull_3(points.begin(), points.end(), r);
     CGAL_Polyhedron r_exact;
     CGALUtils::copyPolyhedron(r, r_exact);
-    return new CGAL_Nef_polyhedron(new CGAL_Nef_polyhedron3(r_exact), ps.attributes);
+    return new CGAL_Nef_polyhedron(new CGAL_Nef_polyhedron3(r_exact), ps.getAttributes());
   }
 
   CGAL_Nef_polyhedron3 *N = nullptr;
@@ -96,7 +96,7 @@ static CGAL_Nef_polyhedron *createNefPolyhedronFromPolySet(const PolySet& ps)
     } catch (const CGAL::Assertion_exception& e) {
       LOG(message_group::Error, Location::NONE, "", "Alternate construction failed. CGAL error in CGAL_Nef_polyhedron3(): %1$s", e.what());
     }
-  return new CGAL_Nef_polyhedron(N, ps.attributes);
+  return new CGAL_Nef_polyhedron(N, ps.getAttributes());
 }
 
 static CGAL_Nef_polyhedron *createNefPolyhedronFromPolygon2d(const Polygon2d& polygon)
@@ -489,7 +489,7 @@ shared_ptr<const PolySet> getGeometryAsPolySet(const shared_ptr<const Geometry>&
     return ps;
   }
   if (auto N = dynamic_pointer_cast<const CGAL_Nef_polyhedron>(geom)) {
-    auto ps = make_shared<PolySet>(3, geom->attributes);
+    auto ps = make_shared<PolySet>(3, geom->getAttributes());
     ps->setConvexity(N->getConvexity());
     if (!N->isEmpty()) {
       bool err = CGALUtils::createPolySetFromNefPolyhedron3(*N->p3, *ps);

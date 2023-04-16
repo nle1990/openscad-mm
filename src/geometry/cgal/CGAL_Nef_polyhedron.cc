@@ -16,7 +16,7 @@ CGAL_Nef_polyhedron::CGAL_Nef_polyhedron(const CGAL_Nef_polyhedron3 *p, Geometry
 CGAL_Nef_polyhedron::CGAL_Nef_polyhedron(const CGAL_Nef_polyhedron& src)
 {
   if (src.p3) this->p3 = src.p3;
-  this->attributes = src.attributes;
+  this->attributes = src.getAttributes();
 }
 /*
 //FIXME-MM: These can only work if the attributes are the same, maybe replace them with something else

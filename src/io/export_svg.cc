@@ -26,6 +26,7 @@
 
 #include "export.h"
 #include "PolySet.h"
+#include <boost/format.hpp>
 
 static void append_svg(const Polygon2d& poly, std::ostream& output)
 {
@@ -46,7 +47,18 @@ static void append_svg(const Polygon2d& poly, std::ostream& output)
     }
     output << " z\n";
   }
-  output << "\" stroke=\"black\" fill=\"lightgray\" stroke-width=\"0.5\"/>\n";
+  std::string fillColor = "lightgray";
+  std::string fillOpacityPart = "";
+  Geometry::Attributes attr = poly.getAttributes();
+  if(attr.color != Color4f{-1.0F, -1.0F, -1.0F, 1.0F}) {
+    fillColor = (boost::format("#%02x%02x%02x") % (int)(attr.color[0] * 255) % (int)(attr.color[1] * 255) % (int)(attr.color[2] * 255)).str();
+    fillOpacityPart = " fill-opacity=\"" + std::to_string(attr.color[3]) + "\"";
+  }
+  std::string classAttributePart = "";
+  if(attr.partName != "") {
+    classAttributePart = " class=\"" + attr.partName + "\"";
+  }
+  output << "\"" << classAttributePart << " stroke=\"black\" fill=\"" << fillColor << "\"" << fillOpacityPart << " stroke-width=\"0.5\"/>\n";
 
 }
 

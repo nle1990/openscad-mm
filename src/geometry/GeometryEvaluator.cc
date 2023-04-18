@@ -1427,9 +1427,6 @@ Response GeometryEvaluator::visit(State& state, const LeafNode& node)
 
 Response GeometryEvaluator::visit(State& state, const TextNode& node)
 {
-  //FIXME-MM: I actually think this would need to be the first child, or various special cases, or what have you. as it stands, this is not correct
-  Geometry::Attributes resultAttributes = node.getGeometryAttributes();
-
   if (state.isPrefix()) {
     shared_ptr<const Geometry> geom;
     if (!isSmartCached(node)) {
@@ -1440,7 +1437,7 @@ Response GeometryEvaluator::visit(State& state, const TextNode& node)
         assert(polygon);
         polygonlist.push_back(polygon);
       }
-      geom.reset(ClipperUtils::apply(polygonlist, ClipperLib::ctUnion, resultAttributes)); //FIXME-MM resultAttributes
+      geom.reset(ClipperUtils::apply(polygonlist, ClipperLib::ctUnion, Geometry::Attributes{}));
     } else geom = GeometryCache::instance()->get(this->tree.getIdString(node));
     addToParent(state, node, geom);
     node.progress_report();
@@ -2008,7 +2005,7 @@ Response GeometryEvaluator::visit(State& state, const LinearExtrudeNode& node)
       if (!node.filename.empty()) {
         DxfData dxf(node.fn, node.fs, node.fa, node.filename, node.layername, node.origin_x, node.origin_y, node.scale_x);
 
-        Polygon2d *p2d = dxf.toPolygon2d(node.getGeometryAttributes()); //FIXME-MM: I think node is the wrong node, we need the attributes of the children
+        Polygon2d *p2d = dxf.toPolygon2d(Geometry::Attributes{});
         if (p2d) geometry = std::shared_ptr<const Geometry>(ClipperUtils::sanitize(*p2d));
         delete p2d;
       } else {
@@ -2028,9 +2025,7 @@ Response GeometryEvaluator::visit(State& state, const LinearExtrudeNode& node)
             item.second.reset(extruded);
           }
           geom.reset(new GeometryList(geometryItems));
-        }
-        else
-        {
+        } else {
           auto polygons = dynamic_pointer_cast<const Polygon2d>(geometry);
           assert(polygons);
           Geometry *extruded = extrudePolygon(node, *polygons.get());
@@ -2087,9 +2082,7 @@ static Geometry *rotatePolygon(const RotateExtrudeNode& node, const Polygon2d& p
 {
   if (node.angle == 0) return nullptr;
 
-  //FIXME-MM: I actually think this would need to be the first child, or various special cases, or what have you. as it stands, this is not correct
-  Geometry::Attributes resultAttributes = node.getGeometryAttributes();
-  PolySet *ps = new PolySet(3, resultAttributes);
+  PolySet *ps = new PolySet(3, poly.getAttributes());
   ps->setConvexity(node.convexity);
 
   double min_x = 0;
@@ -2180,7 +2173,7 @@ Response GeometryEvaluator::visit(State& state, const RotateExtrudeNode& node)
       std::shared_ptr<const Geometry> geometry = nullptr;
       if (!node.filename.empty()) {
         DxfData dxf(node.fn, node.fs, node.fa, node.filename, node.layername, node.origin_x, node.origin_y, node.scale);
-        Polygon2d *p2d = dxf.toPolygon2d(node.getGeometryAttributes()); //FIXME-MM: I think node is the wrong node, we need the attributes of the children
+        Polygon2d *p2d = dxf.toPolygon2d(Geometry::Attributes{});
         if (p2d) geometry = std::shared_ptr<const Geometry>(ClipperUtils::sanitize(*p2d));
         delete p2d;
       } else {
@@ -2269,8 +2262,14 @@ shared_ptr<const Geometry> GeometryEvaluator::projectionNoCut(const ProjectionNo
     std::vector<const Polygon2d *> tmp_geom;
     BoundingBox bounds;
 
+    Geometry::Attributes resultAttributes;
+    bool resultAttributesRetrieved = false;
     for (const auto& item : children.second) {
       const shared_ptr<const Geometry>& chgeom = item.second;
+      if(item.second && !resultAttributesRetrieved) {
+        resultAttributesRetrieved = true;
+        resultAttributes = item.second->getAttributes();
+      }
 
       const Polygon2d *poly = nullptr;
 
@@ -2305,7 +2304,7 @@ shared_ptr<const Geometry> GeometryEvaluator::projectionNoCut(const ProjectionNo
     sumclipper.StrictlySimple(true);
     sumclipper.Execute(ClipperLib::ctUnion, sumresult, ClipperLib::pftNonZero, ClipperLib::pftNonZero);
     if (sumresult.Total() > 0) {
-      geom.reset(ClipperUtils::toPolygon2d(sumresult, pow2,node.getGeometryAttributes())); //FIXME-MM: I think node is the wrong node, we need the attributes of the children
+      geom.reset(ClipperUtils::toPolygon2d(sumresult, pow2, resultAttributes));
     }
 
     geometries.push_back(std::make_pair(std::shared_ptr<AbstractNode>(), geom));
@@ -2442,20 +2441,19 @@ Response GeometryEvaluator::visit(State& state, const RoofNode& node)
     if (!isSmartCached(node)) {
       std::shared_ptr<const Geometry> geometry = applyToChildren2D(node, OpenSCADOperator::UNION);
       if (geometry) {
-        auto polygons = dynamic_pointer_cast<const Polygon2d>(geometry); //FIXME-MM: this is not always a polygon2d
-        assert(polygons); //FIXME-MM: I added this
-        Geometry *roof;
-        try {
-          roof = roofOverPolygon(node, *polygons.get());
-        } catch (RoofNode::roof_exception& e) {
-          LOG(message_group::Error, node.modinst->location(), this->tree.getDocumentPath(),
-              "Skeleton computation error. " + e.message());
-          //FIXME-MM: I actually think this would need to be the first child, or various special cases, or what have you. as it stands, this is not correct
-          Geometry::Attributes resultAttributes = node.getGeometryAttributes();
-          roof = new PolySet(3, resultAttributes);
+        auto polygons = dynamic_pointer_cast<const Polygon2d>(geometry);
+        if(polygons) {
+          Geometry *roof;
+          try {
+            roof = roofOverPolygon(node, *polygons.get());
+          } catch (RoofNode::roof_exception& e) {
+            LOG(message_group::Error, node.modinst->location(), this->tree.getDocumentPath(),
+                "Skeleton computation error. " + e.message());
+            roof = new PolySet(3, polygons->getAttributes());
+          }
+          assert(roof);
+          geom.reset(roof);
         }
-        assert(roof);
-        geom.reset(roof);
       }
     } else {
       geom = smartCacheGet(node, false);

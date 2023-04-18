@@ -249,6 +249,24 @@ Response CSGTreeEvaluator::visit(State& state, const ColorNode& node)
   }
   if (state.isPostfix()) {
     applyToChildren(state, node, OpenSCADOperator::UNION);
+    shared_ptr<CSGNode> t = this->stored_term[node.index()];
+    std::function<void(shared_ptr<CSGNode>)> colorChildren = [&](shared_ptr<CSGNode> t) -> void {
+      if(auto tleaf = dynamic_pointer_cast<CSGLeaf>(t)) {
+        if(tleaf->geom) {
+          Geometry *geom_copy = tleaf->geom->copy();
+          geom_copy->setColor(node.color);
+          tleaf->geom.reset(geom_copy);
+        }
+      } else if(auto top = dynamic_pointer_cast<CSGOperation>(t)) {
+        if(top->left()) {
+          colorChildren(top->left());
+        }
+        if(top->right()) {
+          colorChildren(top->right());
+        }
+      }
+    };
+    colorChildren(t);
     addToParent(state, node);
   }
   return Response::ContinueTraversal;

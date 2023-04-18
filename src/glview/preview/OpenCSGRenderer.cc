@@ -311,10 +311,7 @@ void OpenCSGRenderer::createCSGProducts(const CSGProducts& products, const Rende
               handleIntersectionPolySet(ps);
             }
           }
-        } else if( csgobj.leaf->geom) {
-          LOG(message_group::None, Location::NONE, "", "createCSGProducts/intersections: ignoring geometry due to type: '%1$s'", csgobj.leaf->geom->toString()); //FIXME-MM: remove
         }
-
       }
     }
 
@@ -391,10 +388,7 @@ void OpenCSGRenderer::createCSGProducts(const CSGProducts& products, const Rende
               handleSubtractionPolySet(ps);
             }
           }
-        } else if(csgobj.leaf->geom) {
-          LOG(message_group::None, Location::NONE, "", "createCSGProducts/subtraction: ignoring geometry due to type: '%1$s'", csgobj.leaf->geom->toString()); //FIXME-MM: remove
         }
-
       }
     }
 
@@ -492,8 +486,6 @@ void OpenCSGRenderer::renderCSGProducts(const std::shared_ptr<CSGProducts>& prod
               handleIntersectionPolySet(ps);
             }
           }
-        } else if( csgobj.leaf->geom) {
-          LOG(message_group::None, Location::NONE, "", "renderCSGProducts/intersection: ignoring geometry due to type: '%1$s'", csgobj.leaf->geom->toString()); //FIXME-MM: remove
         }
       }
 
@@ -535,8 +527,6 @@ void OpenCSGRenderer::renderCSGProducts(const std::shared_ptr<CSGProducts>& prod
               handleSubtractionPolySet(ps);
             }
           }
-        } else if( csgobj.leaf->geom) {
-          LOG(message_group::None, Location::NONE, "", "renderCSGProducts/subtraction: ignoring geometry due to type: '%1$s'", csgobj.leaf->geom->toString()); //FIXME-MM: remove
         }
       }
 

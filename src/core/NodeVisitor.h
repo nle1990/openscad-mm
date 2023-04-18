@@ -88,7 +88,6 @@ public:
   Response visit(class State& state, const class TransformNode& node) override {
     return visit(state, (const class AbstractNode&)node);
   }
-  //FIXME-MM: are these 3 even needed if we override them in geometryevaluator?
   Response visit(class State& state, const class ColorNode& node) override {
     return visit(state, (const class AbstractNode&)node);
   }

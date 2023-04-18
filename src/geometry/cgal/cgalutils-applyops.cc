@@ -35,10 +35,8 @@ namespace CGALUtils {
    Applies op to all children and returns the result.
    The child list should be guaranteed to contain non-NULL 3D or empty Geometry objects
  */
-shared_ptr<const Geometry> applyOperator3D(const Geometry::Geometries& children, OpenSCADOperator op, Geometry::Attributes attr) //FIXME-MM: possibly just check children for being the same and error out if they are not instead of second param here
-//Also, if you change this back, you need to also change the declaration in cgalutils.h
+shared_ptr<const Geometry> applyOperator3D(const Geometry::Geometries& children, OpenSCADOperator op, Geometry::Attributes attr)
 {
-  LOG(message_group::None, Location::NONE, "", "applyOperator3D called");
   if (Feature::ExperimentalFastCsg.is_enabled()) {
     return applyOperator3DHybrid(children, op, attr);
   }
@@ -79,17 +77,13 @@ shared_ptr<const Geometry> applyOperator3D(const Geometry::Geometries& children,
 
       switch (op) {
       case OpenSCADOperator::INTERSECTION:
-        //FIXME-MM: check correct attribute behaviour
-        //*N *= *chN; <- code before I took out the nef poly operators
-        N->p3.reset(new CGAL_Nef_polyhedron3((*N->p3) * (*chN->p3)));
+        *N *= *chN;
         break;
       case OpenSCADOperator::DIFFERENCE:
-        //FIXME-MM: check correct attribute behaviour
-        //*N -= *chN; <- code before I took out the nef poly operators
-        N->p3.reset(new CGAL_Nef_polyhedron3((*N->p3) - (*chN->p3)));
+        *N -= *chN;
         break;
       case OpenSCADOperator::MINKOWSKI:
-        N->minkowski(*chN); //FIXME-MM: check if this deals with the attributes correctly (I think in this case it's ok)
+        N->minkowski(*chN);
         break;
       default:
         LOG(message_group::Error, Location::NONE, "", "Unsupported CGAL operator: %1$d", static_cast<int>(op));
@@ -111,11 +105,8 @@ shared_ptr<const Geometry> applyOperator3D(const Geometry::Geometries& children,
 }
 
 shared_ptr<const Geometry> applyUnion3D(
-  Geometry::Geometries::iterator chbegin, Geometry::Geometries::iterator chend, Geometry::Attributes attr)  //FIXME-MM: possibly just check children for being the same and error out if they are not instead of second param here
-//Also, if you change this back, you need to also change the declaration in cgalutils.h
+  Geometry::Geometries::iterator chbegin, Geometry::Geometries::iterator chend, Geometry::Attributes attr)
 {
-  //FIXME-MM: also examine source below, since unions especially need to be changed in regards to attributes. maybe this doesn't need attributes but only needs to return a geometrylist, with matching metadata each being combined
-  LOG(message_group::None, Location::NONE, "", "applyUnion3D called");
   if (Feature::ExperimentalFastCsg.is_enabled()) {
     return applyUnion3DHybrid(chbegin, chend, attr);
   }
@@ -151,8 +142,6 @@ shared_ptr<const Geometry> applyUnion3D(
       q.pop();
       auto p2 = q.top();
       q.pop();
-      //q.emplace(make_shared<const CGAL_Nef_polyhedron>(*p1.first + *p2.first), -1); <- previous code with direct nef poly addition
-      //FIXME-MM: check for correctness regarding attributes
       q.emplace(make_shared<const CGAL_Nef_polyhedron>(new CGAL_Nef_polyhedron3(*p1.first->p3 + *p2.first->p3), attr), -1);
       progress_tick();
     }
@@ -172,8 +161,6 @@ shared_ptr<const Geometry> applyUnion3D(
 
 bool applyHull(const Geometry::Geometries& children, PolySet& result)
 {
-  //FIXME-MM: examine and possibly change source below
-  LOG(message_group::None, Location::NONE, "", "applyHull called");
   typedef CGAL::Epick K;
   // Collect point cloud
   Reindexer<K::Point_3> reindexer;
@@ -241,11 +228,8 @@ bool applyHull(const Geometry::Geometries& children, PolySet& result)
 /*!
    children cannot contain nullptr objects
  */
-shared_ptr<const Geometry> applyMinkowski(const Geometry::Geometries& children, Geometry::Attributes attr) //FIXME-MM: possibly just check children for being the same and error out if they are not instead of second param here
-//Also, if you change this back, you need to also change the declaration in cgalutils.h
+shared_ptr<const Geometry> applyMinkowski(const Geometry::Geometries& children, Geometry::Attributes attr)
 {
-  //FIXME-MM: examine and possibly change source below
-  LOG(message_group::None, Location::NONE, "", "applyMinkowski called");
   if (Feature::ExperimentalFastCsg.is_enabled()) {
     return applyMinkowskiHybrid(children, attr);
   }
@@ -425,7 +409,7 @@ shared_ptr<const Geometry> applyMinkowski(const Geometry::Geometries& children, 
           fake_children.push_back(std::make_pair(std::shared_ptr<const AbstractNode>(),
                                                  partToGeom(part)));
         }
-        auto N = CGALUtils::applyUnion3D(fake_children.begin(), fake_children.end(), attr); //FIXME-MM: attr??
+        auto N = CGALUtils::applyUnion3D(fake_children.begin(), fake_children.end(), attr);
         // FIXME: This should really never throw.
         // Assert once we figured out what went wrong with issue #1069?
         if (!N) throw 0;
@@ -434,7 +418,7 @@ shared_ptr<const Geometry> applyMinkowski(const Geometry::Geometries& children, 
         t.reset();
         operands[0] = N;
       } else {
-        operands[0] = shared_ptr<const Geometry>(new CGAL_Nef_polyhedron(nullptr, attr)); //FIXME-MM: attr?
+        operands[0] = shared_ptr<const Geometry>(new CGAL_Nef_polyhedron(nullptr, attr));
       }
     }
 
@@ -446,7 +430,7 @@ shared_ptr<const Geometry> applyMinkowski(const Geometry::Geometries& children, 
     // If anything throws we simply fall back to Nef Minkowski
     PRINTD("Minkowski: Falling back to Nef Minkowski");
 
-    auto N = shared_ptr<const Geometry>(applyOperator3D(children, OpenSCADOperator::MINKOWSKI, attr)); //FIXME-MM: attr?
+    auto N = shared_ptr<const Geometry>(applyOperator3D(children, OpenSCADOperator::MINKOWSKI, attr));
     return N;
   }
 }

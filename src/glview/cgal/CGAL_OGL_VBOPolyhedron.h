@@ -37,7 +37,7 @@ class CGAL_OGL_VBOPolyhedron : public VBOPolyhedron, public CGAL_OGL_Polyhedron
 {
 public:
 
-  CGAL_OGL_VBOPolyhedron(const ColorScheme& cs, Color4f overrideColor = {-1.0f, -1.0f, -1.0f, 1.0f}) //FIXME-MM: overrideColor is not being used
+  CGAL_OGL_VBOPolyhedron(const ColorScheme& cs, Color4f overrideColor = {-1.0f, -1.0f, -1.0f, 1.0f})
     : VBOPolyhedron(), CGAL_OGL_Polyhedron(cs, overrideColor) {
     PRINTD("CGAL_OGL_VBOPolyhedron()");
     PRINTD("CGAL_OGL_VBOPolyhedron() end");

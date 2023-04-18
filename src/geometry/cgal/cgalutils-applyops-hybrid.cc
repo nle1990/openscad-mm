@@ -20,7 +20,6 @@ shared_ptr<CGALHybridPolyhedron> applyUnion3DHybrid(
   const Geometry::Geometries::const_iterator& chend,
   Geometry::Attributes attr)
 {
-  LOG(message_group::None, Location::NONE, "", "applyUnion3DHybrid called");
   typedef std::pair<shared_ptr<CGALHybridPolyhedron>, int> QueueItem;
   struct QueueItemGreater {
     // stable sort for priority_queue by facets, then progress mark
@@ -89,7 +88,6 @@ shared_ptr<CGALHybridPolyhedron> applyUnion3DHybrid(
  */
 shared_ptr<CGALHybridPolyhedron> applyOperator3DHybrid(const Geometry::Geometries& children, OpenSCADOperator op, Geometry::Attributes attr)
 {
-  LOG(message_group::None, Location::NONE, "", "applyOperator3DHybrid called");
   shared_ptr<CGALHybridPolyhedron> N;
 
   assert(op != OpenSCADOperator::UNION && "use applyUnion3D() instead of applyOperator3D()");

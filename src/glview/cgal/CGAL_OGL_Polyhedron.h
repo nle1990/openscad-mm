@@ -60,9 +60,8 @@ public:
 
     if(overrideColor != Color4f{-1.0f, -1.0f, -1.0f, 1.0f})
     {
-      //FIXME-MM: maybe look at the OpenCSGRenderer and its color modes to figure out how to do this more properly?
       setColor(CGALColorIndex::UNMARKED_FACET_COLOR, overrideColor);
-      setColor(CGALColorIndex::MARKED_FACET_COLOR, overrideColor); //I think this needs transparency
+      setColor(CGALColorIndex::MARKED_FACET_COLOR, overrideColor);
     }
 
     PRINTD("CGAL_OGL_Polyhedron() end");

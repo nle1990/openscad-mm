@@ -37,12 +37,9 @@
 #include <CGAL/convex_hull_2.h>
 #include <CGAL/Point_2.h>
 
-//#define GEOMETRYLIST_TEST 1
-
 GeometryEvaluator::GeometryEvaluator(const class Tree& tree) :
   tree(tree)
 {
-  LOG(message_group::None, Location::NONE, "", "GeometryEvaluator constructed");
 }
 
 /*!
@@ -51,10 +48,10 @@ GeometryEvaluator::GeometryEvaluator(const class Tree& tree) :
 shared_ptr<const Geometry> GeometryEvaluator::evaluateGeometry(const AbstractNode& node,
                                                                bool allownef)
 {
-  const std::string& key = this->tree.getIdString(node); //FIXME-MM: does this cache need to be modified to be part/material/color metadata aware? could it e.g. cache subtrees of different colors as the same?
+  const std::string& key = this->tree.getIdString(node);
   if (!GeometryCache::instance()->contains(key)) {
     shared_ptr<const Geometry> N;
-    if (CGALCache::instance()->contains(key)) { //FIXME-MM: same as above
+    if (CGALCache::instance()->contains(key)) {
       N = CGALCache::instance()->get(key);
     }
 
@@ -107,23 +104,7 @@ shared_ptr<const Geometry> GeometryEvaluator::evaluateGeometry(const AbstractNod
     }
     smartCacheInsert(node, this->root);
 
-    if(this->root)
-    {
-      LOG(message_group::None, Location::NONE, "", "returning evaluated geometry: '%1$s'", this->root->toString());
-    }
-    else
-    {
-      LOG(message_group::None, Location::NONE, "", "returning null pointer");
-    }
     return this->root;
-  }
-  if(GeometryCache::instance()->get(key))
-  {
-    LOG(message_group::None, Location::NONE, "", "returning cached geometry: '%1$s'", GeometryCache::instance()->get(key)->toString());
-  }
-  else
-  {
-    LOG(message_group::None, Location::NONE, "", "returning null pointer (b)");
   }
   return GeometryCache::instance()->get(key);
 }
@@ -188,11 +169,7 @@ GeometryEvaluator::ResultObject GeometryEvaluator::softUnionGeometries(const Abs
     }
     else if(geometries.size() == 1)
     {
-      #ifdef GEOMETRYLIST_TEST
-        return ResultObject(std::shared_ptr<const Geometry>(new GeometryList(geometries))); //FIXME-MM: undo this (geometrylist compat check)
-      #else
-        return ResultObject(geometries.front().second);
-      #endif
+      return ResultObject(geometries.front().second);
     }
     else
     {
@@ -228,11 +205,7 @@ GeometryEvaluator::ResultObject GeometryEvaluator::softUnionGeometries(const Abs
     }
     else if(geometries.size() == 1)
     {
-      #ifdef GEOMETRYLIST_TEST
-        return ResultObject(new GeometryList(geometries)); //FIXME-MM: undo this (geometrylist compat check)
-      #else
-        return ResultObject(geometries.front().second);
-      #endif
+      return ResultObject(geometries.front().second);
     }
     else
     {
@@ -328,11 +301,7 @@ GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren3D(const Abstr
     }
     else if(geometries.size() == 1)
     {
-      #ifdef GEOMETRYLIST_TEST
-        return ResultObject(new GeometryList(geometries)); //FIXME-MM: undo this (geometrylist compat check)
-      #else
-        return ResultObject(geometries.front().second);
-      #endif
+      return ResultObject(geometries.front().second);
     }
     else
     {
@@ -350,11 +319,7 @@ GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren3D(const Abstr
 
   // Only one child -> this is a noop
   if (childGroups.size() == 1 && childGroups.begin()->second.size() == 1) {
-    #ifdef GEOMETRYLIST_TEST
-      return ResultObject(new GeometryList(childGroups.begin()->second)); //FIXME-MM: undo this (geometrylist compat check)
-    #else
-      return ResultObject(childGroups.begin()->second.front().second);
-    #endif
+    return ResultObject(childGroups.begin()->second.front().second);
   }
 
   switch (op) {
@@ -389,11 +354,7 @@ GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren3D(const Abstr
     }
     else if(geometries.size() == 1)
     {
-      #ifdef GEOMETRYLIST_TEST
-        return ResultObject(new GeometryList(geometries)); //FIXME-MM: undo this (geometrylist compat check)
-      #else
-        return ResultObject(geometries.front().second);
-      #endif
+      return ResultObject(geometries.front().second);
     }
     else
     {
@@ -432,11 +393,7 @@ GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren3D(const Abstr
     }
     else if(geometries.size() == 1)
     {
-      #ifdef GEOMETRYLIST_TEST
-        return ResultObject(new GeometryList(geometries)); //FIXME-MM: undo this (geometrylist compat check)
-      #else
-        return ResultObject(geometries.front().second);
-      #endif
+      return ResultObject(geometries.front().second);
     }
     else
     {
@@ -528,11 +485,7 @@ std::shared_ptr<const Geometry> GeometryEvaluator::applyHull2D(const AbstractNod
   }
   else if(geometries.size() == 1)
   {
-    #ifdef GEOMETRYLIST_TEST
-      return std::shared_ptr<const Geometry>(new GeometryList(geometries)); //FIXME-MM: undo this (geometrylist compat check)
-    #else
-      return geometries.front().second;
-    #endif
+    return geometries.front().second;
   }
   else
   {
@@ -579,11 +532,7 @@ std::shared_ptr<const Geometry> GeometryEvaluator::applyFill2D(const AbstractNod
   }
   else if(geometries.size() == 1)
   {
-    #ifdef GEOMETRYLIST_TEST
-      return std::shared_ptr<const Geometry>(new GeometryList(geometries)); //FIXME-MM: undo this (geometrylist compat check)
-    #else
-      return geometries.front().second;
-    #endif
+    return geometries.front().second;
   }
   else
   {
@@ -620,11 +569,7 @@ std::shared_ptr<const Geometry> GeometryEvaluator::applyMinkowski2D(const Abstra
   }
   else if(geometries.size() == 1)
   {
-    #ifdef GEOMETRYLIST_TEST
-      return std::shared_ptr<const Geometry>(new GeometryList(geometries)); //FIXME-MM: undo this (geometrylist compat check)
-    #else
-      return geometries.front().second;
-    #endif
+    return geometries.front().second;
   }
   else
   {
@@ -1031,11 +976,7 @@ std::shared_ptr<const Geometry> GeometryEvaluator::applyToChildren2D(const Abstr
   }
   else if(geometries.size() == 1)
   {
-    #ifdef GEOMETRYLIST_TEST
-      return std::shared_ptr<const Geometry>(new GeometryList(geometries)); //FIXME-MM: undo this (geometrylist compat check)
-    #else
-      return geometries.front().second;
-    #endif
+    return geometries.front().second;
   }
   else
   {
@@ -1839,7 +1780,7 @@ static Geometry *extrudePolygon(const LinearExtrudeNode& node, const Polygon2d& 
   }
 
   // Calculate outline segments if appropriate.
-  Polygon2d seg_poly(resultAttributes); //FIXME-MM: again, not sure this is right. not sure it even matters in this case, but maybe
+  Polygon2d seg_poly(resultAttributes);
   bool is_segmented = false;
   if (node.has_segments) {
     // Set segments = 0 to disable

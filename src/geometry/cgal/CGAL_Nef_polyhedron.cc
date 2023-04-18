@@ -18,11 +18,10 @@ CGAL_Nef_polyhedron::CGAL_Nef_polyhedron(const CGAL_Nef_polyhedron& src)
   if (src.p3) this->p3 = src.p3;
   this->attributes = src.getAttributes();
 }
-/*
-//FIXME-MM: These can only work if the attributes are the same, maybe replace them with something else
+
 CGAL_Nef_polyhedron CGAL_Nef_polyhedron::operator+(const CGAL_Nef_polyhedron& other) const
 {
-  return CGAL_Nef_polyhedron(new CGAL_Nef_polyhedron3((*this->p3) + (*other.p3)));
+  return CGAL_Nef_polyhedron(new CGAL_Nef_polyhedron3((*this->p3) + (*other.p3)), attributes);
 }
 
 CGAL_Nef_polyhedron& CGAL_Nef_polyhedron::operator+=(const CGAL_Nef_polyhedron& other)
@@ -41,7 +40,7 @@ CGAL_Nef_polyhedron& CGAL_Nef_polyhedron::operator-=(const CGAL_Nef_polyhedron& 
 {
   this->p3.reset(new CGAL_Nef_polyhedron3((*this->p3) - (*other.p3)));
   return *this;
-}*/
+}
 
 // Note: this is only the fallback method in case of failure in CGALUtils::applyMinkowski (see: cgalutils-applyops.cc)
 CGAL_Nef_polyhedron& CGAL_Nef_polyhedron::minkowski(const CGAL_Nef_polyhedron& other)

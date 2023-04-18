@@ -124,7 +124,7 @@ ClipperLib::Paths process(const ClipperLib::Paths& polygons,
    May return an empty Polygon2d, but will not return nullptr.
  */
 Polygon2d *apply(const std::vector<ClipperLib::Paths>& pathsvector,
-                 ClipperLib::ClipType clipType, int pow2, Geometry::Attributes attr) //FIXME-MM: is this the best way here?
+                 ClipperLib::ClipType clipType, int pow2, Geometry::Attributes attr)
 {
   ClipperLib::Clipper clipper;
 
@@ -163,9 +163,8 @@ Polygon2d *apply(const std::vector<ClipperLib::Paths>& pathsvector,
    May return an empty Polygon2d, but will not return nullptr.
  */
 Polygon2d *apply(const std::vector<const Polygon2d *>& polygons,
-                 ClipperLib::ClipType clipType, Geometry::Attributes attr) //FIXME-MM: is this the best way here? check if all polygons in teh vector have the same attributes instead? but what if not?
+                 ClipperLib::ClipType clipType, Geometry::Attributes attr)
 {
-  //FIXME-MM: remove this method in favor of the one using Geometries
   BoundingBox bounds;
   for (auto polygon : polygons) {
     if (polygon) bounds.extend(polygon->getBoundingBox());

@@ -22,6 +22,6 @@ ClipperLib::Paths process(const ClipperLib::Paths& polygons,
                           ClipperLib::ClipType, ClipperLib::PolyFillType);
 Polygon2d *applyOffset(const Polygon2d& poly, double offset, ClipperLib::JoinType joinType, double miter_limit, double arc_tolerance);
 Polygon2d *applyMinkowski(const Geometry::Geometries& polygonItems, Geometry::Attributes attr);
-Polygon2d *apply(const std::vector<const Polygon2d *>& polygons, ClipperLib::ClipType, Geometry::Attributes attr); //FIXME-MM: remove
+Polygon2d *apply(const std::vector<const Polygon2d *>& polygons, ClipperLib::ClipType, Geometry::Attributes attr);
 Polygon2d *apply(const Geometry::Geometries& polygonItems, ClipperLib::ClipType clipType, Geometry::Attributes attr);
 }

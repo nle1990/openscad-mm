@@ -1265,7 +1265,6 @@ void MainWindow::instantiateRoot()
  */
 void MainWindow::compileCSG()
 {
-  LOG(message_group::None, Location::NONE, "", "called MainWindow::compileCSG");
   OpenSCAD::hardwarnings = Preferences::inst()->getValue("advanced/enableHardwarnings").toBool();
   try{
     assert(this->root_node);
@@ -1277,13 +1276,11 @@ void MainWindow::compileCSG()
     connect(this->progresswidget, SIGNAL(requestShow()), this, SLOT(showProgress()));
 
 #ifdef ENABLE_CGAL
-    LOG(message_group::None, Location::NONE, "", "creating GeometryEvaluator from MainWindow::compileCSG");
     GeometryEvaluator geomevaluator(this->tree);
 #else
     // FIXME: Will we support this?
 #endif
 #ifdef ENABLE_OPENCSG
-    LOG(message_group::None, Location::NONE, "", "passing GeometryEvaluator to CSGTreeEvaluator from MainWindow::compileCSG");
     CSGTreeEvaluator csgrenderer(this->tree, &geomevaluator);
 #endif
 
@@ -1292,7 +1289,6 @@ void MainWindow::compileCSG()
     try {
 #ifdef ENABLE_OPENCSG
       this->processEvents();
-      LOG(message_group::None, Location::NONE, "", "calling CSGTreeEvaluator::buildCSGTree from MainWindow::compileCSG");
       this->csgRoot = csgrenderer.buildCSGTree(*root_node);
 #endif
       renderStatistic.printCacheStatistic();
@@ -1365,13 +1361,11 @@ void MainWindow::compileCSG()
     else {
       LOG(message_group::None, Location::NONE, "", "Normalized tree has %1$d elements!",
           (this->root_products ? this->root_products->size() : 0));
-      LOG(message_group::None, Location::NONE, "", "constructing OpenCSGRenderer from MainWindow::compileCSG");
       this->opencsgRenderer = new OpenCSGRenderer(this->root_products,
                                                   this->highlights_products,
                                                   this->background_products);
     }
 #endif
-    LOG(message_group::None, Location::NONE, "", "constructing ThrownTogetherRenderer from MainWindow::compileCSG");
     this->thrownTogetherRenderer = new ThrownTogetherRenderer(this->root_products,
                                                               this->highlights_products,
                                                               this->background_products);

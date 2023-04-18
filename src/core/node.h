@@ -65,19 +65,6 @@ public:
 
   int idx; // Node index (unique per tree)
 
-  Geometry::Attributes derivedAttributes = {};
-
-  Geometry::Attributes getGeometryAttributes() const {
-    return derivedAttributes;
-  }
-
-  Geometry::IrreconcilableAttributes getIrreconcilableGeometryAttributes() const {
-    return {
-      .materialName = derivedAttributes.materialName,
-      .partName = derivedAttributes.partName
-    };
-  }
-
   std::shared_ptr<const AbstractNode> getNodeByID(int idx, std::deque<std::shared_ptr<const AbstractNode> >& path) const;
 };
 

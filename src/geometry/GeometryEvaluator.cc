@@ -307,9 +307,6 @@ GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren3D(const Abstr
       // a geometry with no node (e.g. a child of a GeometryList from a previous hull operation), but never neither
       if(firstChild.second) {
         resultAttributes = firstChild.second->getAttributes();
-      } else if(firstChild.first) {
-        LOG(message_group::None, Location::NONE, "", "applyToChildren3D: using node attributes due to null-geometry");
-        resultAttributes = firstChild.first->getGeometryAttributes(); //FIXME-MM: we should probably not even resort to this, but just look for the first child that does have geometry, since this might ignore attributes set by a child node
       } else {
         resultAttributes = Geometry::getDefaultAttributes();
       }
@@ -370,9 +367,6 @@ GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren3D(const Abstr
       Geometry::Attributes resultAttributes;
       if(firstChild.second) {
         resultAttributes = firstChild.second->getAttributes();
-      } else if(firstChild.first) {
-        LOG(message_group::None, Location::NONE, "", "applyToChildren3D: using node attributes due to null-geometry");
-        resultAttributes = firstChild.first->getGeometryAttributes(); //FIXME-MM: we should probably not even resort to this, but just look for the first child that does have geometry, since this might ignore attributes set by a child node
       } else {
         resultAttributes = Geometry::getDefaultAttributes();
       }
@@ -416,9 +410,6 @@ GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren3D(const Abstr
       Geometry::Attributes resultAttributes;
       if(firstChild.second) {
         resultAttributes = firstChild.second->getAttributes();
-      } else if(firstChild.first) {
-        LOG(message_group::None, Location::NONE, "", "applyToChildren3D: using node attributes due to null-geometry");
-        resultAttributes = firstChild.first->getGeometryAttributes(); //FIXME-MM: we should probably not even resort to this, but just look for the first child that does have geometry, since this might ignore attributes set by a child node
       } else {
         resultAttributes = Geometry::getDefaultAttributes();
       }
@@ -461,9 +452,6 @@ GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren3D(const Abstr
       Geometry::Attributes resultAttributes;
       if(children.second.front().second) {
         resultAttributes = children.second.front().second->getAttributes();
-      } else if(children.second.front().first) {
-        resultAttributes = children.second.front().first->getGeometryAttributes(); //FIXME-MM: we should probably not even resort to this, but just look for the first child that does have geometry, since this might ignore attributes set by a child node
-        LOG(message_group::None, Location::NONE, "", "applyToChildren3D: using node attributes due to null-geometry");
       } else {
         resultAttributes = Geometry::getDefaultAttributes();
       }
@@ -497,8 +485,6 @@ std::shared_ptr<const Geometry> GeometryEvaluator::applyHull2D(const AbstractNod
     // a geometry with no node (e.g. a child of a GeometryList from a previous hull operation), but never neither
     if(firstChild.second) {
       resultAttributes = firstChild.second->getAttributes();
-    } else if(firstChild.first) {
-      resultAttributes = firstChild.first->getGeometryAttributes(); //FIXME-MM: we should probably not even resort to this, but just look for the first child that does have geometry, since this might ignore attributes set by a child node
     } else {
       resultAttributes = Geometry::getDefaultAttributes();
     }
@@ -567,8 +553,6 @@ std::shared_ptr<const Geometry> GeometryEvaluator::applyFill2D(const AbstractNod
     // a geometry with no node (e.g. a child of a GeometryList from a previous hull operation), but never neither
     if(firstChild.second) {
       resultAttributes = firstChild.second->getAttributes();
-    } else if(firstChild.first) {
-      resultAttributes = firstChild.first->getGeometryAttributes(); //FIXME-MM: we should probably not even resort to this, but just look for the first child that does have geometry, since this might ignore attributes set by a child node
     } else {
       resultAttributes = Geometry::getDefaultAttributes();
     }
@@ -623,8 +607,6 @@ std::shared_ptr<const Geometry> GeometryEvaluator::applyMinkowski2D(const Abstra
     // a geometry with no node (e.g. a child of a GeometryList from a previous hull operation), but never neither
     if(firstChild.second) {
       resultAttributes = firstChild.second->getAttributes();
-    } else if(firstChild.second) {
-      resultAttributes = firstChild.first->getGeometryAttributes(); //FIXME-MM: we should probably not even resort to this, but just look for the first child that does have geometry, since this might ignore attributes set by a child node
     } else {
       resultAttributes = Geometry::getDefaultAttributes();
     }
@@ -771,26 +753,7 @@ std::map<Geometry::Attributes, Geometry::Geometries> GeometryEvaluator::collectE
     auto sortGeometry = [&](const Geometry::GeometryItem &item) {
       Geometry::Attributes group;
       if(item.second) {
-        // Geometry attributes have precedence since nodes may have children that set further attributes, which their parents are not privy to
         group = item.second->getAttributes();
-      } else if(item.first) {
-        // FIXME-MM: this would ignore the material component of something like 'part("p1") material("m1");'. Although, of course,
-        // this only happens with empty geometries so maybe that's okay-ish?
-        // removing this else if breaks the following tests:
-        // 371 - cgalpngtest_issue666_2D
-        // 394 - cgalpngtest_intersection-tests
-        // 471 - cgalpngtest_issue666
-        // 774 - csgpngtest_issue666_2D
-        // 798 - csgpngtest_intersection-tests
-        // 874 - csgpngtest_issue666
-        // 1400 - dxfpngtest_issue666_2D
-        // 1464 - svgpngtest_issue666_2D
-        // use this to study the behaviour of this better and figure out what to do. Ideally it would be a better way of getting
-        // node attributes, maybe by letting children overwrite any attributes that have not been set at all (would need to add
-        // flags for this to nodes)
-        // what about part("p1") { material("m1"); material("m2"); } though?
-        // see issue #19 on my tracker
-        group = item.first->getGeometryAttributes();
       } else {
         group = Geometry::getDefaultAttributes();
       }
@@ -802,9 +765,9 @@ std::map<Geometry::Attributes, Geometry::Geometries> GeometryEvaluator::collectE
           loc = item.first->modinst->location();
           path = this->tree.getDocumentPath();
         }
-        //FIXME-MM: I should check if adding nodes to the geometrylists causes any problems, down the line, and then we might not need to check for item.first anymore (see #22)
+
         LOG(message_group::Warning, loc, path, "Ignoring %1$iD child object for %2$iD operation", item.second->getDimension(), dimension);
-        childgroups[group].push_back(std::make_pair(item.first, nullptr)); // replace 2D geometry with empty geometry
+        childgroups[Geometry::getDefaultAttributes()].push_back(std::make_pair(item.first, nullptr)); // replace geometry with empty geometry
       } else {
         // Add children if geometry is 3D OR null/empty
         if(dimension == 2) {
@@ -812,7 +775,7 @@ std::map<Geometry::Attributes, Geometry::Geometries> GeometryEvaluator::collectE
             assert(dynamic_cast<const Polygon2d *>(item.second.get()));
             childgroups[group].push_back(item);
           } else {
-            childgroups[group].push_back(std::make_pair(item.first, nullptr));
+            childgroups[Geometry::getDefaultAttributes()].push_back(std::make_pair(item.first, nullptr));
           }
         } else {
           childgroups[group].push_back(item);
@@ -857,26 +820,7 @@ std::map<Geometry::IrreconcilableAttributes, Geometry::Geometries> GeometryEvalu
     auto sortGeometry = [&](const Geometry::GeometryItem &item) {
       Geometry::IrreconcilableAttributes group;
       if(item.second) {
-        // Geometry attributes have precedence since nodes may have children that set further attributes, which their parents are not privy to
         group = item.second->getIrreconcilableAttributes();
-      } else if(item.first) {
-        // FIXME-MM: this would ignore the material component of something like 'part("p1") material("m1");'. Although, of course,
-        // this only happens with empty geometries so maybe that's okay-ish?
-        // removing this else if breaks the following tests:
-        // 371 - cgalpngtest_issue666_2D
-        // 394 - cgalpngtest_intersection-tests
-        // 471 - cgalpngtest_issue666
-        // 774 - csgpngtest_issue666_2D
-        // 798 - csgpngtest_intersection-tests
-        // 874 - csgpngtest_issue666
-        // 1400 - dxfpngtest_issue666_2D
-        // 1464 - svgpngtest_issue666_2D
-        // use this to study the behaviour of this better and figure out what to do. Ideally it would be a better way of getting
-        // node attributes, maybe by letting children overwrite any attributes that have not been set at all (would need to add
-        // flags for this to nodes)
-        // what about part("p1") { material("m1"); material("m2"); } though?
-        // see issue #19 on my tracker
-        group = item.first->getIrreconcilableGeometryAttributes();
       } else {
         group = Geometry::getDefaultIrreconcilableAttributes();
       }
@@ -888,9 +832,9 @@ std::map<Geometry::IrreconcilableAttributes, Geometry::Geometries> GeometryEvalu
           loc = item.first->modinst->location();
           path = this->tree.getDocumentPath();
         }
-        //FIXME-MM: I should check if adding nodes to the geometrylists causes any problems, down the line, and then we might not need to check for item.first anymore (see #22)
+
         LOG(message_group::Warning, loc, path, "Ignoring %1$iD child object for %2$iD operation", item.second->getDimension(), dimension);
-        childgroups[group].push_back(std::make_pair(item.first, nullptr)); // replace 2D geometry with empty geometry
+        childgroups[Geometry::getDefaultIrreconcilableAttributes()].push_back(std::make_pair(item.first, nullptr)); // replace geometry with empty geometry
       } else {
         // Add children if geometry is 3D OR null/empty
         if(dimension == 2) {
@@ -898,7 +842,7 @@ std::map<Geometry::IrreconcilableAttributes, Geometry::Geometries> GeometryEvalu
             assert(dynamic_cast<const Polygon2d *>(item.second.get()));
             childgroups[group].push_back(item);
           } else {
-            childgroups[group].push_back(std::make_pair(item.first, nullptr));
+            childgroups[Geometry::getDefaultIrreconcilableAttributes()].push_back(std::make_pair(item.first, nullptr));
           }
         } else {
           childgroups[group].push_back(item);
@@ -1074,8 +1018,6 @@ std::shared_ptr<const Geometry> GeometryEvaluator::applyToChildren2D(const Abstr
     // a geometry with no node (e.g. a child of a GeometryList from a previous hull operation), but never neither
     if(firstChild.second) {
       resultAttributes = firstChild.second->getAttributes();
-    } else if(firstChild.first) {
-      resultAttributes = firstChild.first->getGeometryAttributes(); //FIXME-MM: we should probably not even resort to this, but just look for the first child that does have geometry, since this might ignore attributes set by a child node
     } else {
       resultAttributes = Geometry::getDefaultAttributes();
     }

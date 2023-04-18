@@ -61,21 +61,7 @@ static std::shared_ptr<AbstractNode> builtin_part(const ModuleInstantiation *ins
     node->partName = cleanName;
   }
 
-  node->derivedAttributes.partName = node->partName;
-
-  auto returnNode = children.instantiate(node);
-
-  std::function<void (const std::shared_ptr<const AbstractNode> &)> recursive_mark_children = [&](const std::shared_ptr<const AbstractNode> &currentNode) {
-    for (auto child : currentNode->children) {
-      LOG(message_group::None, Location::NONE, "", "Child %1$s: marking partName as %2$s, previously %3$s", child->toString(), node->partName, child->derivedAttributes.partName);
-      child->derivedAttributes.partName = node->partName;
-      recursive_mark_children(child);
-    }
-  };
-
-  recursive_mark_children(node);
-
-  return returnNode;
+  return children.instantiate(node);
 }
 
 std::string PartNode::toString() const

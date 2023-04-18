@@ -60,21 +60,8 @@ static std::shared_ptr<AbstractNode> builtin_material(const ModuleInstantiation 
         LOG(message_group::Warning, inst->location(), parameters.documentRoot(), "material() expects strings containing alphanumeric characters and underscores only - \"%1s\" will be changed to \"%2s\"", node->materialName, cleanName);
     node->materialName = cleanName;
   }
-  node->derivedAttributes.materialName = node->materialName;
 
-  auto returnNode = children.instantiate(node);
-
-  std::function<void (const std::shared_ptr<const AbstractNode> &)> recursive_mark_children = [&](const std::shared_ptr<const AbstractNode> &currentNode) {
-    for (auto child : currentNode->children) {
-      LOG(message_group::None, Location::NONE, "", "Child %1$s: marking materialName as %2$s, previously %3$s", child->toString(), node->materialName, child->derivedAttributes.materialName);
-      child->derivedAttributes.materialName = node->materialName;
-      recursive_mark_children(child);
-    }
-  };
-
-  recursive_mark_children(node);
-
-  return returnNode;
+  return children.instantiate(node);
 }
 
 std::string MaterialNode::toString() const

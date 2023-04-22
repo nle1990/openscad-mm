@@ -1372,52 +1372,54 @@ Response GeometryEvaluator::visit(State& state, const TransformNode& node)
         LOG(message_group::Warning, node.modinst->location(), this->tree.getDocumentPath(), "Transformation matrix contains Not-a-Number and/or Infinity - removing object.");
       } else {
         // First union all children
-        ResultObject res = applyToChildren(node, OpenSCADOperator::UNION);
-        if ((geom = res.constptr())) {
-          if (geom->getDimension() == 2) {
+        std::shared_ptr<const Geometry> childGeom = getChildrenAsGeometry(node);
+        if (childGeom) {
+          auto transformPolygon2d = [&](std::shared_ptr<Polygon2d> newpoly) -> Geometry* {
+            Transform2d mat2;
+            mat2.matrix() <<
+              node.matrix(0, 0), node.matrix(0, 1), node.matrix(0, 3),
+              node.matrix(1, 0), node.matrix(1, 1), node.matrix(1, 3),
+              node.matrix(3, 0), node.matrix(3, 1), node.matrix(3, 3);
+            newpoly->transform(mat2);
+            // A 2D transformation may flip the winding order of a polygon.
+            // If that happens with a sanitized polygon, we need to reverse
+            // the winding order for it to be correct.
+            if (newpoly->isSanitized() && mat2.matrix().determinant() <= 0) {
+              return ClipperUtils::sanitize(*newpoly);
+            } else {
+              return newpoly->copy();
+            }
+          };
 
-            auto transformPolygon = [&](std::shared_ptr<Polygon2d> newpoly) -> Geometry* {
-              Transform2d mat2;
-              mat2.matrix() <<
-                node.matrix(0, 0), node.matrix(0, 1), node.matrix(0, 3),
-                node.matrix(1, 0), node.matrix(1, 1), node.matrix(1, 3),
-                node.matrix(3, 0), node.matrix(3, 1), node.matrix(3, 3);
-              newpoly->transform(mat2);
-              // A 2D transformation may flip the winding order of a polygon.
-              // If that happens with a sanitized polygon, we need to reverse
-              // the winding order for it to be correct.
-              if (newpoly->isSanitized() && mat2.matrix().determinant() <= 0) {
-                return ClipperUtils::sanitize(*newpoly);
-              } else {
-                return newpoly->copy();
+          if(std::shared_ptr<const GeometryList> geomlist = dynamic_pointer_cast<const GeometryList>(childGeom)) {
+            Geometry::Geometries geometryItems = geomlist->flatten();
+            for(auto& item : geometryItems) {
+              if(!item.second) {
+                continue;
               }
-            };
-
-            if(std::shared_ptr<const GeometryList> geomlist = dynamic_pointer_cast<const GeometryList>(geom)) {
-              Geometry::Geometries geometryItems = geomlist->flatten();
-              for(auto& item : geometryItems) {
-                if(!item.second) {
-                  continue;
-                }
+              if(item.second->getDimension() == 2) {
                 std::shared_ptr<const Polygon2d> polygons = dynamic_pointer_cast<const Polygon2d>(item.second);
                 assert(polygons);
                 std::shared_ptr<Polygon2d> newpoly = std::shared_ptr<Polygon2d>(new Polygon2d(*polygons));
-                item.second.reset(transformPolygon(newpoly));
+                item.second.reset(transformPolygon2d(newpoly));
+              } else {
+                Geometry *newGeom = item.second->copy();
+                newGeom->transform(node.matrix);
+                item.second.reset(newGeom);
               }
-              geom.reset(new GeometryList(geometryItems));
-            } else {
-              std::shared_ptr<const Polygon2d> polygons = dynamic_pointer_cast<const Polygon2d>(geom);
-              assert(polygons);
-              // If we got a const object, make a copy
-              std::shared_ptr<Polygon2d> newpoly;
-              if (res.isConst()) newpoly.reset(new Polygon2d(*polygons));
-              else newpoly = dynamic_pointer_cast<Polygon2d>(res.ptr());
-              geom.reset(transformPolygon(newpoly));
             }
-          } else if (geom->getDimension() == 3) {
-            auto mutableGeom = res.asMutableGeometry();
+            geom.reset(new GeometryList(geometryItems));
+          } else if (childGeom->getDimension() == 2) {
+            std::shared_ptr<const Polygon2d> polygons = dynamic_pointer_cast<const Polygon2d>(childGeom);
+            assert(polygons);
+            // If we got a const object, make a copy
+            std::shared_ptr<Polygon2d> newpoly;
+            newpoly.reset(new Polygon2d(*polygons));
+            geom.reset(transformPolygon2d(newpoly));
+          } else if (childGeom->getDimension() == 3) {
+            auto mutableGeom = childGeom->copy();
             if (mutableGeom) mutableGeom->transform(node.matrix);
-            geom = mutableGeom;
+            geom = shared_ptr<const Geometry>(mutableGeom);
           }
         }
       }

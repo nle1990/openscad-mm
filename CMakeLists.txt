@@ -574,11 +574,13 @@ set(CORE_SOURCES
   src/core/LocalScope.cc
   src/core/ScopeContext.cc
   src/core/module.cc
+  src/core/MaterialNode.cc
   src/core/node.cc
   src/core/NodeDumper.cc
   src/core/OffsetNode.cc
   src/core/Parameters.cc
   src/core/parsersettings.cc
+  src/core/PartNode.cc
   src/core/primitives.cc
   src/core/progress.cc
   src/core/ProjectionNode.cc
